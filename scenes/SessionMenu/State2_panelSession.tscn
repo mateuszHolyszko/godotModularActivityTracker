@@ -5,7 +5,7 @@
 [sub_resource type="GDScript" id="GDScript_ippak"]
 script/source = "extends Panel
 
-signal session_started(session: HypertrophySessionResource)
+signal session_started(session: SessionModel)
 
 @onready var scroll_content = $VC/HC/MC/VC/ScrollContainer/ScrollContnent
 @onready var finish_session_button = $VC/HC/LeftPanel/VC/SessionButtonsPanel/HC/FinishSessionButton
@@ -13,58 +13,99 @@ signal session_started(session: HypertrophySessionResource)
 
 const EXERCISE_SESSION_ROW_SCENE = preload(\"res://scenes/SessionMenu/exerciseSessionRow.tscn\")
 
-var current_session: HypertrophySessionResource
 var active_program: HypertrophyProgramResource
+var sessionModel: SessionModel
 
+var rows: Array = []  # keep references
+
+
+# ========================
+# INIT
+# ========================
 
 func initialize(program: HypertrophyProgramResource) -> void:
+	print(\"SessionView: initialize with program\", program)
+
 	active_program = program
-	_start_session()
+	sessionModel = SessionModel.new(active_program)
+
+	_connect_model_signals()
+	_build_rows()
+
+	# Set start time
+	sessionModel.start_time = Time.get_unix_time_from_system()
+	session_started.emit(sessionModel)
 
 
-func _ready() -> void:
-	# Don't start session here anymore - wait for initialize()
-	pass
+# ========================
+# SETUP
+# ========================
+
+func _connect_model_signals():
+	print(\"SessionView: connecting model signals\")
+
+	sessionModel.exercise_changed.connect(_on_exercise_changed)
 
 
-func _start_session() -> void:
-	if active_program == null:
-		push_error(\"State2_panelSession: No active program provided!\")
-		return
-	
-	current_session = SessionManager.start_session(active_program)
-	
-	# Emit signal that session has started
-	session_started.emit(current_session)
+func _build_rows():
+	print(\"SessionView: building rows\")
 
-	for entry in current_session.get_sorted_entries():
+	rows.clear()
+	NodeUtils.queue_free_children(scroll_content)
+
+	for i in range(sessionModel.exercises.size()):
 		var row = EXERCISE_SESSION_ROW_SCENE.instantiate()
-		row.current_session = current_session
-		row.exercise = entry.exercise
 		scroll_content.add_child(row)
 
+		row.call_deferred(\"initialize\", sessionModel, i)  # PASS MODEL AND TELL EX_ROW WHAT INDEX IT IS
+		#each row knows its id
+		# ignores signals for other ids !!
+
+		rows.append(row)
+
+	print(\"SessionView: rows created:\", rows.size())
+
+
+# ========================
+# SIGNAL HANDLERS
+# ========================
+
+func _on_exercise_changed(exercise_idx: int):
+	print(\"SessionView: exercise changed at\", exercise_idx)
+
+	# Only update that specific row
+	if exercise_idx < rows.size():
+		rows[exercise_idx].refresh_exercise()
+
+
+# ========================
+# BUTTONS
+# ========================
+
+func _ready() -> void:
 	finish_session_button.pressed.connect(_on_finish_pressed)
 	abort_session_button.pressed.connect(_on_abort_pressed)
 
 
 func _on_finish_pressed() -> void:
-	SessionManager.end_session()
+	print(\"SessionView: finish pressed\")
+
+	var outputSessionResource = sessionModel.finish_session()
+	SessionManager.save_session( outputSessionResource )
+	
 	NotificationManager.notify(\"Session Finished\")
-	# TODO: navigate back / show summary screen
 
 
 func _on_abort_pressed() -> void:
-	# TODO: show confirmation dialog before aborting
+	print(\"SessionView: abort pressed\")
 	_abort_session()
 
 
 func _abort_session() -> void:
-	# Remove all sets that were logged during this session
-	current_session.sets.clear()
-	# End it so is_active() returns false, then delete the saved file
-	SessionManager.end_session()
-	# TODO: delete the .tres file from disk (need the path helper from SessionManager — consider exposing _get_session_dir or a delete_session() method)
-	# TODO: navigate back
+	print(\"SessionView: aborting session\")
+	
+	sessionModel.abort_session()
+
 	NotificationManager.notify(\"Session Aborted\")
 "
 
@@ -76,7 +117,7 @@ script/source = "extends Panel
 @onready var elapsed_time_label = $HC/ElapsedTimePanel2/HC/ElapsedTimeLabel
 @onready var average_time_label = $HC/AverageTimePanel3/HC/AverageTimeLabel
 
-var currentSession: HypertrophySessionResource
+var session_model: SessionModel
 var time_zone_offset: int = 0
 
 # Called when the node enters the scene tree for the first time.
@@ -96,36 +137,38 @@ func _ready():
 	elif time_zone_offset > 43200:  # More than 12 hours
 		time_zone_offset -= 86400
 	
-	# Find the session panel and connect to its signal
+	# Connect to the main control's signal
 	if main_control and main_control.has_signal(\"session_started\"):
 		main_control.session_started.connect(_on_session_started)
 	else:
-		push_error(\"Could not find session panel or session_started signal\")
+		push_error(\"Could not find main control or session_started signal\")
 
-func _on_session_started(session: HypertrophySessionResource):
-	currentSession = session
+func _on_session_started(session: SessionModel):
+	print(\"Session info panel: session started signal received\")
+	session_model = session
 	update_labels()
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta):
 	# Update elapsed time more frequently when session is active
-	if currentSession and currentSession.is_active():
+	if session_model and session_model.start_time > 0 and session_model.end_time == 0:
 		update_elapsed_time()
 
 func update_labels():
-	if not currentSession:
+	if not session_model:
+		print(\"Session info panel: no session model\")
 		return
 	
+	print(\"Session info panel: updating labels\")
 	update_start_time()
 	update_elapsed_time()
-	# Average time calculation would need additional logic
-	# For now, just set a placeholder
-	average_time_label.text = \"0\"
+	# TODO: Implement average time calculation
+	# average_time_label.text = \"0\"
 
 func update_start_time():
-	if currentSession.timestamp_start > 0:
+	if session_model.start_time > 0:
 		# Apply timezone offset to convert UTC to local
-		var local_timestamp = currentSession.timestamp_start + time_zone_offset
+		var local_timestamp = session_model.start_time + time_zone_offset
 		var time_dict = Time.get_time_dict_from_unix_time(local_timestamp)
 		# Format as HH:MM with leading zeros
 		start_time_label.text = \"%02d:%02d\" % [time_dict.hour, time_dict.minute]
@@ -133,15 +176,18 @@ func update_start_time():
 		start_time_label.text = \"--:--\"
 
 func update_elapsed_time():
-	if currentSession.is_active():
-		# For active session, calculate current duration
-		var current_duration = Time.get_unix_time_from_system() - currentSession.timestamp_start
-		elapsed_time_label.text = _format_duration(current_duration)
-	elif currentSession.timestamp_end > 0:
-		# For completed session, use stored duration
-		elapsed_time_label.text = _format_duration(currentSession.get_duration())
-	else:
+	if session_model.start_time == 0:
 		elapsed_time_label.text = \"0:00\"
+		return
+		
+	if session_model.end_time == 0:
+		# For active session, calculate current duration
+		var current_duration = Time.get_unix_time_from_system() - session_model.start_time
+		elapsed_time_label.text = _format_duration(current_duration)
+	else:
+		# For completed session, use stored duration
+		var duration = session_model.end_time - session_model.start_time
+		elapsed_time_label.text = _format_duration(duration)
 
 func _format_duration(seconds: float) -> String:
 	var total_seconds = int(seconds)
@@ -153,6 +199,10 @@ func _format_duration(seconds: float) -> String:
 		return \"%d:%02d:%02d\" % [hours, minutes, secs]
 	else:
 		return \"%d:%02d\" % [minutes, secs]
+
+# Optional: Add a manual refresh method
+func refresh():
+	update_labels()
 "
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_0gpup"]

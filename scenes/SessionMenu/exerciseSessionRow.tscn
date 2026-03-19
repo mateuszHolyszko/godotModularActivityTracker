@@ -6,73 +6,159 @@
 [sub_resource type="GDScript" id="GDScript_rjgvt"]
 script/source = "extends Control
 
-var current_session: HypertrophySessionResource # TODO this should be gotten from its parent sessionMenu later
+var session_model: SessionModel
+var exercise_idx: int
 var exercise: ExerciseResource
-var exercise_sets: Array[ExerciseSetResource]
 
 @onready var set_container = $Panel/HC/PanelMainContent/VC/Panel/VSetBoxContainer
 @onready var main_control = $\".\"
-
-@onready var exercise_button = $Panel/HC/PanelMainContent/VC/ExerciseButton # allows for switching exercise
-@onready var skip_exercise_button = $Panel/HC/SkipExerciseButton # when pressed looks for not filled sets and discardsthem
+@onready var exercise_button = $Panel/HC/PanelMainContent/VC/ExerciseButton
+@onready var skip_exercise_button = $Panel/HC/SkipExerciseButton
 
 const ROW_HEIGHT = 100
 const ADD_BUTTON_HEIGHT = 25
+const EXERCISE_SESSION_ROW_SET_SCENE = preload(\"res://scenes/SessionMenu/exerciseSessionRowSet.tscn\")
 
-func _ready() -> void:
-	exercise_sets = current_session.get_sets_for_exercise(exercise)
-	#print(exercise_sets)
-	_rebuild_set_list()
-	
-	# Color exercise_button by target muscle
+# ========================
+# INIT
+# ========================
+func initialize(model: SessionModel, idx: int):
+	session_model = model
+	exercise_idx = idx
+	exercise = session_model.exercises[exercise_idx]
+
+	print(\"ExerciseRow: init idx =\", idx)
+
+	_connect_signals()
+	_refresh_all()
+
+
+# ========================
+# SIGNAL CONNECTIONS
+# ========================
+func _connect_signals():
+	session_model.set_added.connect(_on_set_added)
+	session_model.set_removed.connect(_on_set_removed)
+	session_model.set_edited.connect(_on_set_edited)
+	session_model.exercise_changed.connect(_on_exercise_changed)
+
+
+# ========================
+# SIGNAL HANDLERS
+# ========================
+func _on_set_added(idx, set_res):
+	if idx != exercise_idx:
+		return
+	print(\"ExerciseRow\", exercise_idx, \": set added\")
+	_add_row_for_new_set(set_res)
+
+
+func _on_set_removed(idx, set_number):
+	if idx != exercise_idx:
+		return
+	print(\"ExerciseRow\", exercise_idx, \": set removed\")
+	_remove_row_for_set_number(set_number)
+
+
+func _on_set_edited(idx, set_number, set_res):
+	if idx != exercise_idx:
+		return
+	print(\"ExerciseRow\", exercise_idx, \": set edited\")
+	_update_row_for_set(set_res)
+
+
+func _on_exercise_changed(idx):
+	if idx != exercise_idx:
+		return
+	print(\"ExerciseRow\", exercise_idx, \": exercise changed\")
+	exercise = session_model.exercises[exercise_idx]
+	_refresh_exercise()
+
+
+# ========================
+# REFRESH LOGIC
+# ========================
+func _refresh_all():
+	_refresh_exercise()
+	_refresh_sets()
+
+
+func _refresh_exercise():
+	print(\"ExerciseRow\", exercise_idx, \": refreshing exercise UI\")
 	var style = StyleBoxFlat.new()
 	style.bg_color = MuscleData.MUSCLE_COLORS.get(exercise.target_muscle, Color.WHITE)
-	style.set_border_width_all(2)  
+	style.set_border_width_all(2)
 	style.border_color = Color.WHITE
-	
+
 	exercise_button.add_theme_stylebox_override(\"normal\", style)
 	exercise_button.add_theme_stylebox_override(\"hover\", style)
 	exercise_button.add_theme_stylebox_override(\"pressed\", style)
 	exercise_button.add_theme_color_override(\"font_color\", Color.BLACK)
 	exercise_button.text = exercise.name
 
-const EXERCISE_SESSION_ROW_SET_SCENE = preload(\"res://scenes/SessionMenu/exerciseSessionRowSet.tscn\")
 
-func _rebuild_set_list() -> void:
+func _refresh_sets():
+	print(\"ExerciseRow\", exercise_idx, \": refreshing sets\")
+	var exercise_sets = session_model.get_sets_for_exercise(exercise_idx)
+	var current_rows = set_container.get_children()
+
+	# Update existing rows or add new ones
+	for i in range(exercise_sets.size()):
+		var set_data = exercise_sets[i]
+		if i < current_rows.size():
+			current_rows[i].call_deferred(\"update_data\", set_data)
+		else:
+			_add_row_for_new_set(set_data)
+
+	# Remove extra rows if sets were removed
+	if current_rows.size() > exercise_sets.size():
+		for i in range(exercise_sets.size(), current_rows.size()):
+			current_rows[i].queue_free()
+
+	_update_container_height()
+
+
+# ========================
+# ROW MANAGEMENT
+# ========================
+func _add_row_for_new_set(set_data: ExerciseSetResource) -> void:
+	var row = EXERCISE_SESSION_ROW_SET_SCENE.instantiate()
+	set_container.add_child(row)
+	row.call_deferred(\"setup\", set_data, session_model, exercise_idx)
+	_update_container_height()
+
+
+func _remove_row_for_set_number(set_number: int) -> void:
 	for child in set_container.get_children():
-		child.queue_free()
+		if child.set_data.set_number == set_number:
+			child.queue_free()
+			break
+	_update_container_height()
 
-	for s in exercise_sets:
-		var row = EXERCISE_SESSION_ROW_SET_SCENE.instantiate()
-		# Assign data before add_child so _ready() can read them
-		row.set_data = s
-		row.parent_exerciseSessionRow = self
-		set_container.add_child(row)
 
-	main_control.custom_minimum_size.y = (
-		exercise_sets.size() * ROW_HEIGHT + ADD_BUTTON_HEIGHT + 35 # 35 for exercise label
-	)
+func _update_row_for_set(set_data: ExerciseSetResource) -> void:
+	for child in set_container.get_children():
+		if child.set_data.set_number == set_data.set_number:
+			child.call_deferred(\"update_data\", set_data)
+			break
 
+
+func _update_container_height():
+	var exercise_sets = session_model.get_sets_for_exercise(exercise_idx)
+	main_control.custom_minimum_size.y = exercise_sets.size() * ROW_HEIGHT + ADD_BUTTON_HEIGHT + 35
+
+
+# ========================
+# ACTIONS
+# ========================
 func add_set(weight: float, reps: int) -> void:
-	var last_set: ExerciseSetResource = exercise_sets.back()
-	var new_set = SessionManager.log_set(exercise, weight, reps, last_set.set_number + 1)
-	exercise_sets.append(new_set)
-	_rebuild_set_list()
-
-	for row in set_container.get_children():
-		if row.has_method(\"_refresh_add_button_visibility\"):
-			row._refresh_add_button_visibility()
-	
-
-func remove_set(set_number: int) -> void:
-	SessionManager.remove_set(exercise, set_number)
-	exercise_sets = current_session.get_sets_for_exercise(exercise)
-	_rebuild_set_list()
-
-func edit_set(set_number: int, new_weight: float, new_reps: int) -> void:
-	SessionManager.edit_set(exercise, set_number, new_weight, new_reps)
-	exercise_sets = current_session.get_sets_for_exercise(exercise)
-	#_rebuild_set_list()
+	print(\"ExerciseRow\", exercise_idx, \": add_set called\")
+	session_model.add_set(
+		exercise_idx,
+		weight,
+		reps,
+		int(Time.get_unix_time_from_system())
+	)
 "
 
 [node name="ExerciseSessionRow" type="Control"]

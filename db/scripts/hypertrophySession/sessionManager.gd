@@ -60,8 +60,10 @@ func load_sessions(user: UserResource) -> void:
 		if file.ends_with(".tres"):
 			var session = ResourceLoader.load(dir_path + file)
 			if session and session is HypertrophySessionResource:
+				# Repair the back-reference lost during serialization
+				for s in session.sets:
+					s.session = session
 				sessions.append(session)
-				# Restore active session if app was restarted mid-session.
 				if session.is_active():
 					active_session = session
 		file = dir.get_next()
@@ -76,7 +78,8 @@ func save_session(session: HypertrophySessionResource) -> void:
 
 	var dir_path = _get_session_dir(session.program.user)
 	DirAccess.make_dir_recursive_absolute(dir_path)
-	ResourceSaver.save(session, dir_path + session.program.id + "_" + str(session.timestamp_start) + ".tres")
+	var path = dir_path + session.program.id + "_" + str(session.timestamp_start) + ".tres"
+	ResourceSaver.save(session, path, ResourceSaver.FLAG_BUNDLE_RESOURCES)
 
 
 # ---------------------------------------------------------------------------

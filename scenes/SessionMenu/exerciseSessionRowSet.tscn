@@ -7,14 +7,19 @@
 [sub_resource type="GDScript" id="GDScript_aww8w"]
 script/source = "extends Control
 
-# Reference to the parent — gives access to current_session, exercise, add_set, remove_set, edit_set
-@export var parent_exerciseSessionRow: Control
+signal data_loaded  # emitted when UI is fully initialized
 
-# The set this row represents. Set by the parent before adding to the scene tree.
+# --------------------
+# DATA
+# --------------------
+var session_model: SessionModel
+var exercise_idx: int
 var set_data: ExerciseSetResource
-# Corresponding set from the previous session (may be null if it didn't exist).
 var previous_set: ExerciseSetResource
 
+# --------------------
+# UI NODES
+# --------------------
 @onready var previous_weight_label = $Panel/HC/MainPanel/VC/WeightPanel/HC/PreviousWeightPanel/VC/PreviousWeightLabel
 @onready var previous_reps_label   = $Panel/HC/MainPanel/VC/RepsPanel/HC/PreviousRepsPanel/VC/PreviousRepsLabel
 @onready var value_input_weight    = $Panel/HC/MainPanel/VC/WeightPanel/HC/InputWeightPanel/ValueInputWeight
@@ -22,14 +27,71 @@ var previous_set: ExerciseSetResource
 @onready var set_num_label         = $Panel/HC/SetNumPanel/HC/SetNumLabel
 @onready var add_set_button        = $AddSetButton
 
+var _ui_initialized: bool = false
 
+# ========================
+# DATA ONLY: setup (safe to call deferred)
+# ========================
+func setup(set: ExerciseSetResource, model: SessionModel, idx: int) -> void:
+	session_model = model
+	exercise_idx = idx
+	set_data = set
+	print(\"RowSet: setup called for set\", set_data.set_number)
+
+	if _ui_initialized:
+		_initialize_ui()
+
+
+# ========================
+# READY
+# ========================
 func _ready() -> void:
-	# --- Set number label ---
-	set_num_label.text = str(set_data.set_number)
+	_ui_initialized = true
+	_connect_signals()
+	
+	# Initialize UI if setup() was already called
+	if set_data:
+		_initialize_ui()
+	# Otherwise setup() will call _initialize_ui() later
+	print(\"RowSet: ready (UI nodes initialized)\")
 
-	# --- Previous session values ---
-	# Find the matching set (same set_number) from the most recent previous session.
-	var previous_sets := SessionManager.find_most_recent_sets(parent_exerciseSessionRow.exercise)
+
+# ========================
+# SIGNALS
+# ========================
+func _connect_signals():
+	if session_model:
+		session_model.set_added.connect(_on_set_changed)
+		session_model.set_removed.connect(_on_set_changed)
+		session_model.set_edited.connect(_on_set_edited)
+
+
+# ========================
+# UI INITIALIZATION
+# ========================
+func _initialize_ui() -> void:
+	if not set_data:
+		return  # safety
+
+	# set labels & inputs
+	set_num_label.text = str(set_data.set_number)
+	_load_previous_set()
+	_apply_current_values()
+	_refresh_add_button_visibility()
+
+	# connect inputs/buttons
+	value_input_weight.value_confirmed.connect(_on_weight_changed)
+	value_input_reps.value_confirmed.connect(_on_reps_changed)
+	add_set_button.pressed.connect(_on_add_set_pressed)
+
+	# emit signal for any parent needing UI-ready notification
+	data_loaded.emit()
+	print(\"RowSet: UI initialized for set\", set_data.set_number)
+
+
+func _load_previous_set() -> void:
+	var previous_sets := SessionManager.find_most_recent_sets(set_data.exercise)
+
 	previous_set = null
 	for s in previous_sets:
 		if s.set_number == set_data.set_number:
@@ -43,75 +105,128 @@ func _ready() -> void:
 		previous_weight_label.text = \"-\"
 		previous_reps_label.text   = \"-\"
 
-	# --- Pre-fill inputs with previous values as a starting hint ---
-	# TODO: check ValueInput API — assuming .value is the setter
-	if previous_set != null:
-		value_input_weight.value = previous_set.weight
-		value_input_reps.value   = previous_set.reps
 
-	# --- Add set button: only visible on the last row ---
+func _apply_current_values() -> void:
+	value_input_weight.value = set_data.weight
+	value_input_reps.value   = set_data.reps
+
+
+# ========================
+# SIGNAL HANDLERS
+# ========================
+func _on_set_changed(idx, _a = null) -> void:
+	if idx != exercise_idx:
+		return
 	_refresh_add_button_visibility()
 
-	# --- Connect input signals ---
-	value_input_weight.value_confirmed.connect(_on_weight_confirmed)
-	value_input_reps.value_confirmed.connect(_on_reps_confirmed)
-	add_set_button.pressed.connect(_on_add_set_pressed)
+
+func _on_set_edited(idx, set_number, updated_set) -> void:
+	if idx != exercise_idx:
+		return
+	if set_number != set_data.set_number:
+		return
+	set_data = updated_set
+	_apply_current_values()
 
 
-# ---------------------------------------------------------------------------
-# Visibility
-# ---------------------------------------------------------------------------
-
+# ========================
+# UI LOGIC
+# ========================
 func _refresh_add_button_visibility() -> void:
-	var total_sets: int = parent_exerciseSessionRow.exercise_sets.size()
+	var total_sets: int = session_model.get_sets_for_exercise(exercise_idx).size()
 	add_set_button.visible = (set_data.set_number == total_sets)
+	print(\"RowSet\", set_data.set_number, \": add button visible =\", add_set_button.visible)
 
 
-# ---------------------------------------------------------------------------
-# Input callbacks
-# ---------------------------------------------------------------------------
+# ========================
+# INPUT HANDLERS
+# ========================
+func _on_weight_changed(value) -> void:
+	session_model.edit_set(
+		exercise_idx,
+		set_data.set_number,
+		value,
+		value_input_reps.value
+	)
 
-func _on_weight_confirmed(value) -> void:
-	parent_exerciseSessionRow.edit_set(set_data.set_number, value, value_input_reps.value)
 
-func _on_reps_confirmed(value) -> void:
-	parent_exerciseSessionRow.edit_set(set_data.set_number, value_input_weight.value, value)
+func _on_reps_changed(value) -> void:
+	session_model.edit_set(
+		exercise_idx,
+		set_data.set_number,
+		value_input_weight.value,
+		value
+	)
+
 
 func _on_add_set_pressed() -> void:
-	parent_exerciseSessionRow.add_set(value_input_weight.value, value_input_reps.value)
+	session_model.add_set(
+		exercise_idx,
+		value_input_weight.value,
+		value_input_reps.value,
+		int(Time.get_unix_time_from_system())
+	)
+
+func update_data(new_set: ExerciseSetResource) -> void:
+	set_data = new_set
+	if _ui_initialized:
+		_apply_current_values()
+		_refresh_add_button_visibility()
 "
 
 [sub_resource type="GDScript" id="GDScript_vch07"]
 script/source = "extends Panel
+
 @onready var root = $\"../../..\"
 @onready var label = $HC/Label
 @onready var set_num_label = $HC/SetNumLabel
 
-# Called when the node enters the scene tree for the first time.
 func _ready():
-	var exercise = root.set_data.exercise
-	#print(exercise.target_muscle)
+	# Wait one frame to ensure all nodes are properly set up
+	call_deferred(\"_try_connect_signal\")
+
+func _try_connect_signal():
+	# Check if root is valid now
+	if root == null:
+		print(\"Root is still null, will retry...\")
+		await get_tree().create_timer(0.1).timeout
+		_try_connect_signal()
+		return
 	
+	# Now root should be valid
+	if root.has_signal(\"data_loaded\"):
+		if not root.data_loaded.is_connected(_on_data_loaded):
+			root.data_loaded.connect(_on_data_loaded)
+			#print(\"Successfully connected to data_loaded signal\")
+	else:
+		print(\"data_loaded signal not found on root\")
+
+func _on_data_loaded():
+	print(\"data_loaded signal received, applying styles\")
+	
+	# Double-check that all nodes are valid
+	if root == null or root.set_data == null or root.set_data.exercise == null:
+		print(\"Error: root or its data is null\")
+		return
+	
+	var exercise = root.set_data.exercise
 	
 	var style = StyleBoxFlat.new()
 	style.bg_color = MuscleData.MUSCLE_COLORS.get(exercise.target_muscle, Color.WHITE)
-	#print(style.bg_color)
 	style.set_border_width_all(2)  
 	style.border_color = Color.WHITE
 	
 	self.add_theme_stylebox_override(\"normal\", style)
 	self.add_theme_stylebox_override(\"hover\", style)
 	self.add_theme_stylebox_override(\"pressed\", style)
-	label.add_theme_color_override(\"font_color\", Color.BLACK)
-	set_num_label.add_theme_color_override(\"font_color\", Color.BLACK)
+	
+	# Check if label and set_num_label are valid
+	if label:
+		label.add_theme_color_override(\"font_color\", Color.BLACK)
+	if set_num_label:
+		set_num_label.add_theme_color_override(\"font_color\", Color.BLACK)
 	
 	add_theme_stylebox_override(\"panel\", style)
-	# Force a redraw
-	#queue_redraw()
-
-# Called every frame. 'delta' is the elapsed time since the previous frame.
-func _process(delta):
-	pass
 "
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_siyap"]
@@ -228,14 +343,15 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_font_sizes/font_size = 35
-text = "W:"
+theme_override_font_sizes/font_size = 28
+text = "Weight [Kg]:"
 horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="InputWeightPanel" type="Panel" parent="Panel/HC/MainPanel/VC/WeightPanel/HC"]
 layout_mode = 2
 size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.5
 
 [node name="ValueInputWeight" type="Button" parent="Panel/HC/MainPanel/VC/WeightPanel/HC/InputWeightPanel"]
 layout_mode = 1
@@ -250,7 +366,7 @@ step = 0.1
 [node name="PreviousWeightPanel" type="Panel" parent="Panel/HC/MainPanel/VC/WeightPanel/HC"]
 layout_mode = 2
 size_flags_horizontal = 3
-size_flags_stretch_ratio = 0.8
+size_flags_stretch_ratio = 0.5
 theme_override_styles/panel = SubResource("StyleBoxFlat_siyap")
 
 [node name="VC" type="VBoxContainer" parent="Panel/HC/MainPanel/VC/WeightPanel/HC/PreviousWeightPanel"]
@@ -306,14 +422,15 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_font_sizes/font_size = 35
-text = "R:"
+theme_override_font_sizes/font_size = 28
+text = "Reps :"
 horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="InputRepsPanel" type="Panel" parent="Panel/HC/MainPanel/VC/RepsPanel/HC"]
 layout_mode = 2
 size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.5
 
 [node name="ValueInputReps" type="Button" parent="Panel/HC/MainPanel/VC/RepsPanel/HC/InputRepsPanel"]
 layout_mode = 1
@@ -328,7 +445,7 @@ max_value = 40.0
 [node name="PreviousRepsPanel" type="Panel" parent="Panel/HC/MainPanel/VC/RepsPanel/HC"]
 layout_mode = 2
 size_flags_horizontal = 3
-size_flags_stretch_ratio = 0.8
+size_flags_stretch_ratio = 0.5
 theme_override_styles/panel = SubResource("StyleBoxFlat_amanx")
 
 [node name="VC" type="VBoxContainer" parent="Panel/HC/MainPanel/VC/RepsPanel/HC/PreviousRepsPanel"]
