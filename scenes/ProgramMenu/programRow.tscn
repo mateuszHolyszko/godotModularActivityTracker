@@ -1,0 +1,357 @@
+[gd_scene load_steps=3 format=3 uid="uid://cf7rwdccnepyb"]
+
+[ext_resource type="Theme" uid="uid://f6n2yykmqd16" path="res://assets/style/theme.tres" id="1_nyiuu"]
+
+[sub_resource type="GDScript" id="GDScript_mqgnx"]
+script/source = "extends Control
+
+@onready var UpButton = $Panel/HC/ArrowPanel/HC/VC/UpButton
+@onready var DownButton = $Panel/HC/ArrowPanel/HC/VC/DownButton
+@onready var ExerciseOrderLabel = $Panel/HC/ArrowPanel/HC/OrderNumberPanel/ExOrderLabel
+@onready var ExerciseButton = $Panel/HC/MainPanel/VC/TargetLabelPanel/ExerciseButton
+@onready var ExTypeOptionButton = $Panel/HC/MainPanel/VC/EditPanel/HC/ExTypePanel/VC/ExTypeOptionButton
+@onready var SuperSetOptionButton = $Panel/HC/MainPanel/VC/EditPanel/HC/SuperSetPanel/VC/SuperSetOptionButton
+@onready var DeleteButton = $Panel/HC/MainPanel/VC/EditPanel/HC/DelButton
+@onready var MainControl = $\"../../../../../../../..\"
+
+var entry: ProgramExerciseEntry = null
+var program: HypertrophyProgramResource = null
+
+
+func load_entry(p_entry: ProgramExerciseEntry, p_program: HypertrophyProgramResource) -> void:
+	entry = p_entry
+	program = p_program
+
+	_load_order_label()
+	_load_exercise_button()
+	_load_ex_type_option()
+	_load_superset_option()
+
+	UpButton.disabled = entry.order == 0
+	DownButton.disabled = entry.order == program.entries.size() - 1
+
+	UpButton.pressed.connect(_on_up_pressed)
+	DownButton.pressed.connect(_on_down_pressed)
+
+	# Connect option buttons — use item_selected which gives the index, not the id
+	ExTypeOptionButton.item_selected.connect(_on_ex_type_selected)
+	SuperSetOptionButton.item_selected.connect(_on_superset_selected)
+	DeleteButton.pressed.connect(_on_delete_pressed)
+
+
+func _on_delete_pressed() -> void:
+	DataManager.remove_exercise_from_program(program, entry.order)
+	get_parent()._populate(program)
+	
+	# Emit signal that active program changed (since its entries were modified)
+	MainControl.active_program_changed.emit(program)
+	NotificationManager.notify(program.name+\" edited\")
+
+
+# ---------------------------------------------------------------------------
+# Option button handlers
+# ---------------------------------------------------------------------------
+
+func _on_ex_type_selected(index: int) -> void:
+	# index matches enum value since we add items in enum order
+	entry.exercise_type = index
+	DataManager.save_program(program)
+
+
+func _on_superset_selected(index: int) -> void:
+	# Always remove any existing superset for this entry first
+	_clear_superset_for(entry.order)
+
+	var selected_id = SuperSetOptionButton.get_item_id(index)
+
+	# -1 means \"None\" — superset already cleared above, just save
+	if selected_id == -1:
+		DataManager.save_program(program)
+		return
+
+	# Add the new superset pair
+	DataManager.add_superset(program, entry.order, selected_id)
+
+
+# ---------------------------------------------------------------------------
+# Arrow button handlers
+# ---------------------------------------------------------------------------
+
+func _on_up_pressed() -> void:
+	_swap_with(entry.order - 1)
+
+
+func _on_down_pressed() -> void:
+	_swap_with(entry.order + 1)
+
+
+func _swap_with(other_order: int) -> void:
+	var other: ProgramExerciseEntry = null
+	for e in program.entries:
+		if e.order == other_order:
+			other = e
+			break
+
+	if other == null:
+		return
+
+	_clear_superset_for(entry.order)
+	_clear_superset_for(other_order)
+
+	var temp: int = entry.order
+	entry.order = other.order
+	other.order = temp
+
+	DataManager.save_program(program)
+	get_parent()._populate(program)
+
+
+func _clear_superset_for(order_index: int) -> void:
+	program.supersets = program.supersets.filter(func(s):
+		return s.order_a != order_index and s.order_b != order_index)
+
+
+# ---------------------------------------------------------------------------
+# Private loaders
+# ---------------------------------------------------------------------------
+
+func _load_order_label() -> void:
+	ExerciseOrderLabel.text = str(entry.order + 1)
+
+
+func _load_exercise_button() -> void:
+	ExerciseButton.text = entry.exercise.name
+
+	if MuscleData:
+		var color = MuscleData.MUSCLE_COLORS.get(entry.exercise.target_muscle, null)
+		if color:
+			var style = StyleBoxFlat.new()
+			style.bg_color = color
+			ExerciseButton.add_theme_stylebox_override(\"normal\", style)
+
+
+func _load_ex_type_option() -> void:
+	ExTypeOptionButton.clear()
+	ExTypeOptionButton.add_item(\"Straight Set\", ProgramExerciseEntry.ExerciseType.STRAIGHT_SET)
+	ExTypeOptionButton.add_item(\"Drop Set\",     ProgramExerciseEntry.ExerciseType.DROP_SET)
+	ExTypeOptionButton.add_item(\"Myo Set\",      ProgramExerciseEntry.ExerciseType.MYO_SET)
+	ExTypeOptionButton.selected = entry.exercise_type
+
+
+func _load_superset_option() -> void:
+	SuperSetOptionButton.clear()
+	SuperSetOptionButton.add_item(\"None\", -1)
+
+	var sorted = program.get_sorted_entries()
+	for other in sorted:
+		if other.order == entry.order:
+			continue
+		if abs(other.order - entry.order) == 1:
+			SuperSetOptionButton.add_item(other.exercise.name, other.order)
+
+	var current_partner_order := -1
+	for pair in program.supersets:
+		if pair.order_a == entry.order:
+			current_partner_order = pair.order_b
+			break
+		elif pair.order_b == entry.order:
+			current_partner_order = pair.order_a
+			break
+
+	for i in SuperSetOptionButton.item_count:
+		if SuperSetOptionButton.get_item_id(i) == current_partner_order:
+			SuperSetOptionButton.selected = i
+			break
+"
+
+[node name="ProgramRow" type="Control"]
+custom_minimum_size = Vector2(0, 100)
+layout_mode = 3
+anchor_right = 1.0
+anchor_bottom = 0.208
+offset_bottom = -99.84
+grow_horizontal = 2
+script = SubResource("GDScript_mqgnx")
+
+[node name="Panel" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("1_nyiuu")
+
+[node name="HC" type="HBoxContainer" parent="Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 0
+
+[node name="ArrowPanel" type="Panel" parent="Panel/HC"]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+size_flags_horizontal = 0
+
+[node name="HC" type="HBoxContainer" parent="Panel/HC/ArrowPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 0
+
+[node name="VC" type="VBoxContainer" parent="Panel/HC/ArrowPanel/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 0
+
+[node name="UpButton" type="Button" parent="Panel/HC/ArrowPanel/HC/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+theme = ExtResource("1_nyiuu")
+text = "Up"
+
+[node name="DownButton" type="Button" parent="Panel/HC/ArrowPanel/HC/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+theme = ExtResource("1_nyiuu")
+text = "Dwn"
+
+[node name="OrderNumberPanel" type="Panel" parent="Panel/HC/ArrowPanel/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ExOrderLabel" type="Label" parent="Panel/HC/ArrowPanel/HC/OrderNumberPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 36
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="MainPanel" type="Panel" parent="Panel/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VC" type="VBoxContainer" parent="Panel/HC/MainPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 0
+
+[node name="TargetLabelPanel" type="Panel" parent="Panel/HC/MainPanel/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_stretch_ratio = 0.4
+
+[node name="ExerciseButton" type="Button" parent="Panel/HC/MainPanel/VC/TargetLabelPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+text = "Exercise Name"
+
+[node name="EditPanel" type="Panel" parent="Panel/HC/MainPanel/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="HC" type="HBoxContainer" parent="Panel/HC/MainPanel/VC/EditPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 0
+
+[node name="ExTypePanel" type="Panel" parent="Panel/HC/MainPanel/VC/EditPanel/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VC" type="VBoxContainer" parent="Panel/HC/MainPanel/VC/EditPanel/HC/ExTypePanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 0
+
+[node name="LabelPanel" type="Panel" parent="Panel/HC/MainPanel/VC/EditPanel/HC/ExTypePanel/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_stretch_ratio = 0.5
+
+[node name="Label" type="Label" parent="Panel/HC/MainPanel/VC/EditPanel/HC/ExTypePanel/VC/LabelPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "Exercise Type"
+horizontal_alignment = 1
+
+[node name="ExTypeOptionButton" type="OptionButton" parent="Panel/HC/MainPanel/VC/EditPanel/HC/ExTypePanel/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+alignment = 1
+item_count = 3
+popup/item_0/text = "STRAIGHT_SET"
+popup/item_0/id = 0
+popup/item_1/text = "DROP_SET"
+popup/item_1/id = 1
+popup/item_2/text = "MYO_SET"
+popup/item_2/id = 2
+
+[node name="SuperSetPanel" type="Panel" parent="Panel/HC/MainPanel/VC/EditPanel/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VC" type="VBoxContainer" parent="Panel/HC/MainPanel/VC/EditPanel/HC/SuperSetPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 0
+
+[node name="LabelPanel" type="Panel" parent="Panel/HC/MainPanel/VC/EditPanel/HC/SuperSetPanel/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_stretch_ratio = 0.5
+
+[node name="Label" type="Label" parent="Panel/HC/MainPanel/VC/EditPanel/HC/SuperSetPanel/VC/LabelPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "Superset"
+horizontal_alignment = 1
+
+[node name="SuperSetOptionButton" type="OptionButton" parent="Panel/HC/MainPanel/VC/EditPanel/HC/SuperSetPanel/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+alignment = 1
+
+[node name="DelButton" type="Button" parent="Panel/HC/MainPanel/VC/EditPanel/HC"]
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+text = "Del"

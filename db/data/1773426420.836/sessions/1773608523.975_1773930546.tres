@@ -1,0 +1,135 @@
+[gd_resource type="Resource" script_class="HypertrophySessionResource" load_steps=20 format=3]
+
+[ext_resource type="Script" path="res://db/scripts/exercise/exercise_resource.gd" id="1_ej2dx"]
+[ext_resource type="Script" path="res://db/scripts/hyperthropyProgram/program_exercise_entry.gd" id="2_0m82j"]
+[ext_resource type="Resource" path="res://db/data/1773426420.836/programs/1773608523.975.tres" id="3_2beev"]
+[ext_resource type="Script" path="res://db/scripts/hypertrophySession/hypertrophy_session_resource.gd" id="4_5ek5k"]
+[ext_resource type="Script" path="res://db/scripts/hypertrophySession/exercise_set_resource.gd" id="5_oyuat"]
+
+[sub_resource type="Resource" id="Resource_gxa24"]
+script = ExtResource("1_ej2dx")
+id = "1773517273.283"
+name = "BENCH PRESS"
+target_muscle = "Chest"
+bodyweight = false
+isolation = true
+tension_profile = 0
+intensity = 1
+rep_range = Vector2i(3, 7)
+
+[sub_resource type="Resource" id="Resource_xol5h"]
+script = ExtResource("2_0m82j")
+order = 0
+exercise_type = 0
+exercise = SubResource("Resource_gxa24")
+
+[sub_resource type="Resource" id="Resource_bfhqc"]
+script = ExtResource("1_ej2dx")
+id = "1773531483.514"
+name = "FRENCH PRESS"
+target_muscle = "Triceps"
+bodyweight = false
+isolation = true
+tension_profile = 0
+intensity = 0
+rep_range = Vector2i(9, 16)
+
+[sub_resource type="Resource" id="Resource_ae3i6"]
+script = ExtResource("2_0m82j")
+order = 1
+exercise_type = 0
+exercise = SubResource("Resource_bfhqc")
+
+[sub_resource type="Resource" id="Resource_7nxih"]
+script = ExtResource("1_ej2dx")
+id = "1773531156.936"
+name = "PULLUP"
+target_muscle = "Back"
+bodyweight = true
+isolation = false
+tension_profile = 0
+intensity = 1
+rep_range = Vector2i(8, 13)
+
+[sub_resource type="Resource" id="Resource_qr5tn"]
+script = ExtResource("2_0m82j")
+order = 2
+exercise_type = 0
+exercise = SubResource("Resource_7nxih")
+
+[sub_resource type="Resource" id="Resource_p1b07"]
+script = ExtResource("1_ej2dx")
+id = "1773522315.114"
+name = "BICEPS CURL"
+target_muscle = "Biceps"
+bodyweight = false
+isolation = true
+tension_profile = 0
+intensity = 0
+rep_range = Vector2i(8, 16)
+
+[sub_resource type="Resource" id="Resource_1i23f"]
+script = ExtResource("2_0m82j")
+order = 3
+exercise_type = 0
+exercise = SubResource("Resource_p1b07")
+
+[sub_resource type="Resource" id="Resource_o5nfw"]
+script = ExtResource("1_ej2dx")
+id = "1773674431.389"
+name = "RING PUSH UP"
+target_muscle = "Chest"
+bodyweight = true
+isolation = true
+tension_profile = 0
+intensity = 1
+rep_range = Vector2i(8, 12)
+
+[sub_resource type="Resource" id="Resource_rsnsd"]
+script = ExtResource("2_0m82j")
+order = 4
+exercise_type = 0
+exercise = SubResource("Resource_o5nfw")
+
+[sub_resource type="Resource" id="Resource_pcv37"]
+script = ExtResource("1_ej2dx")
+id = "1773674371.474"
+name = "DRAGON FLAG"
+target_muscle = "Abs"
+bodyweight = true
+isolation = true
+tension_profile = 1
+intensity = 0
+rep_range = Vector2i(8, 12)
+
+[sub_resource type="Resource" id="Resource_8wt6v"]
+script = ExtResource("2_0m82j")
+order = 5
+exercise_type = 0
+exercise = SubResource("Resource_pcv37")
+
+[sub_resource type="Resource" id="Resource_sn8j8"]
+script = ExtResource("5_oyuat")
+session = null
+exercise = SubResource("Resource_gxa24")
+set_number = 2
+weight = 0.0
+reps = 0
+timestamp = 1773930625
+
+[sub_resource type="Resource" id="Resource_ttuky"]
+script = ExtResource("5_oyuat")
+session = null
+exercise = SubResource("Resource_gxa24")
+set_number = 3
+weight = 0.0
+reps = 0
+timestamp = 1773930626
+
+[resource]
+script = ExtResource("4_5ek5k")
+program = ExtResource("3_2beev")
+timestamp_start = 1773930546
+timestamp_end = 0
+entries = Array[ExtResource("2_0m82j")]([SubResource("Resource_xol5h"), SubResource("Resource_ae3i6"), SubResource("Resource_qr5tn"), SubResource("Resource_1i23f"), SubResource("Resource_rsnsd"), SubResource("Resource_8wt6v")])
+sets = Array[ExtResource("5_oyuat")]([SubResource("Resource_sn8j8"), SubResource("Resource_ttuky")])

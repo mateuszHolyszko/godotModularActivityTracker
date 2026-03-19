@@ -1,0 +1,484 @@
+[gd_scene load_steps=11 format=3 uid="uid://d1qdecyrowblw"]
+
+[ext_resource type="Script" path="res://scenes/ProgramMenu/programMenu.gd" id="1_c1scn"]
+[ext_resource type="Theme" uid="uid://f6n2yykmqd16" path="res://assets/style/theme.tres" id="1_lw7x4"]
+[ext_resource type="Texture2D" uid="uid://ckxu85xwh7omx" path="res://assets/icons/add-box-svgrepo-com.svg" id="3_7xkbn"]
+[ext_resource type="Script" path="res://scenes/elements/KeyBoardInput/KeyboardInputButton.gd" id="3_k1hxr"]
+[ext_resource type="PackedScene" uid="uid://b8kt1prsxu3fy" path="res://scenes/elements/KeyBoardInput/keyBoardInput.tscn" id="4_qd1us"]
+[ext_resource type="Texture2D" uid="uid://ca382g8x3661c" path="res://assets/images/logo.png" id="5_nm1fp"]
+[ext_resource type="PackedScene" uid="uid://dwapybagn1n0d" path="res://scenes/elements/PieCharts/pieChart.tscn" id="5_np1x7"]
+
+[sub_resource type="GDScript" id="GDScript_3q1cd"]
+script/source = "extends Panel
+
+@onready var VBoxProgramsContainer = $VC/MC/VBoxPrograms
+@onready var MainControl = $\"../../../../../..\"
+@onready var ScrollPane = $\"../../../RightPanel/MC/ScrollContainer/ScrollContent\"
+@onready var NoUserPanel = $NoUserPanel # If no current user make visible, otherwise invisible
+
+@onready var addProgramButton = $VC/AddProgramButton
+
+var program_buttons: Array[Button] = []
+
+
+func _ready():
+	DataManager.user_changed.connect(_on_user_changed)
+	_update_button_states()
+	_populate()
+
+
+func _on_user_changed(_user: UserResource) -> void:
+	_update_button_states()
+	_populate()
+
+
+func _update_button_states() -> void:
+	var has_user = DataManager.current_user != null
+	addProgramButton.disabled = not has_user
+	NoUserPanel.visible = not has_user  
+
+
+func _populate() -> void:
+	# Clear existing buttons array
+	program_buttons.clear()
+	
+	for child in VBoxProgramsContainer.get_children():
+		child.queue_free()
+
+	for program in DataManager.programs:
+		# Create HBoxContainer for this program row
+		var hbox := HBoxContainer.new()
+		hbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		
+		# Create program selection button (60% width)
+		var program_btn := Button.new()
+		program_btn.text = program.name
+		program_btn.toggle_mode = true
+		program_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		program_btn.size_flags_stretch_ratio = 0.6  # Takes 60% of the width
+		program_btn.pressed.connect(_on_program_pressed.bind(program_btn, program))
+		
+		# Create rename button using KeyboardInputButton (20% width)
+		var rename_btn := KeyboardInputButton.new()
+		#rename_btn.placeholder_text = \"ReNm\"
+		#rename_btn.text = \"ReNm\"
+		rename_btn.icon = preload(\"res://assets/icons/unlink-svgrepo-com.svg\")
+		rename_btn.expand_icon = true
+		rename_btn.vertical_icon_alignment = VERTICAL_ALIGNMENT_CENTER
+		rename_btn.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		
+		rename_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		rename_btn.size_flags_stretch_ratio = 0.2  # Takes 20% of the width
+		rename_btn.text_changed.connect(_on_rename_confirmed.bind(program))
+		rename_btn.keyboard_scene = preload(\"res://scenes/elements/KeyBoardInput/keyBoardInput.tscn\")
+		
+		# Create delete button (20% width)
+		var delete_btn := Button.new()
+		#delete_btn.text = \"Del\"
+		delete_btn.icon = preload(\"res://assets/icons/trash-svgrepo-com.svg\")
+		delete_btn.expand_icon = true
+		delete_btn.vertical_icon_alignment = VERTICAL_ALIGNMENT_CENTER
+		delete_btn.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		
+		delete_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		delete_btn.size_flags_stretch_ratio = 0.2  # Takes 20% of the width
+		delete_btn.pressed.connect(_on_delete_pressed.bind(program))
+		
+		# Add buttons to HBoxContainer
+		hbox.add_child(program_btn)
+		hbox.add_child(rename_btn)
+		hbox.add_child(delete_btn)
+		
+		# Add HBoxContainer to the main VBox container
+		VBoxProgramsContainer.add_child(hbox)
+		
+		# Store reference to program button for toggle management
+		program_buttons.append(program_btn)
+
+
+func _on_program_pressed(clicked_button: Button, program: HypertrophyProgramResource) -> void:
+	# Set the active program
+	MainControl.active_program = program
+	
+	# Untoggle all other buttons
+	for btn in program_buttons:
+		if btn != clicked_button:
+			btn.button_pressed = false
+		else:
+			btn.button_pressed = true  # Ensure the clicked button is toggled on
+
+
+func _on_rename_confirmed(new_name: String, program: HypertrophyProgramResource) -> void:
+	# Trim whitespace
+	new_name = new_name.strip_edges()
+	
+	if new_name.is_empty():
+		NotificationManager.notify(\"Program name cannot be empty\")
+		return
+	
+	if new_name == program.name:
+		# No change, just return
+		return
+	
+	# Update the program name
+	program.name = new_name
+	
+	# Save the changes
+	DataManager.save_program(program)
+	
+	NotificationManager.notify(\"Program renamed to: \" + new_name)
+	print(\"Program renamed to: \", program.name)
+	
+	_populate()  # Refresh the list to update button text
+
+
+func _on_delete_pressed(program: HypertrophyProgramResource) -> void:
+	print(\"deleting \" + program.name)
+	
+	# Delete the program using DataManager
+	DataManager.delete_program(program.id)
+	NotificationManager.notify(program.name + \" deleted successfully\")
+	
+	# Delete ScrollPaneContent
+	for child in ScrollPane.get_children():
+		child.queue_free()
+	
+	_populate()  # Refresh the list
+	
+	
+
+
+func _on_add_program_button_text_changed(program_name: String) -> void:
+	# Return Button text to icon, this needs to be done since this element be defult sets its output string as .text
+	addProgramButton.text = \"\"
+	addProgramButton.icon = preload(\"res://assets/icons/add-box-svgrepo-com.svg\")
+	addProgramButton.expand_icon = true
+	addProgramButton.vertical_icon_alignment = VERTICAL_ALIGNMENT_CENTER
+	addProgramButton.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	
+	# Check if the program name is not empty
+	if program_name.is_empty():
+		push_warning(\"Program name cannot be empty\")
+		NotificationManager.notify(\"Program name cannot be empty\")
+		return
+	
+	# Create the program using DataManager
+	var new_program = DataManager.create_program(program_name)
+	
+	if new_program:
+		print(\"Program created successfully: \", new_program.name)
+		NotificationManager.notify(\"Program created successfully\")
+		
+		_populate()  # Refresh the list
+	else:
+		push_error(\"Failed to create program: \", program_name)
+		NotificationManager.notify(\"Failed to create program\")
+"
+
+[sub_resource type="GDScript" id="GDScript_6ft4m"]
+script/source = "extends Panel
+@onready var MainControl = $\"../../../../../..\" #holds the root
+@onready var pieChart = $PieChartPanel/PieChart
+@onready var NoProgramPanel = $NoProgramPanel
+
+func _ready():
+	MainControl.active_program_changed.connect(_on_active_program_changed)
+	NoProgramPanel.visible = MainControl.active_program == null
+	
+	# Initial update
+	_on_active_program_changed(MainControl.active_program)
+
+func _on_active_program_changed(program: HypertrophyProgramResource) -> void:
+	# Change visibility of cover panel
+	NoProgramPanel.visible = program == null
+	
+	# Get current active program target overview	
+	var overview = DataManager.get_program_muscle_overview(MainControl.active_program)
+	
+	# Prepare batch entries
+	var batch_entries = []
+	for muscle in overview:
+		if overview[muscle] != 0:
+			batch_entries.append([overview[muscle], MuscleData.get_color(muscle), muscle])
+			print(overview[muscle])
+			print(muscle)
+	
+	# Clear and add all entries at once
+	pieChart.clear()
+	pieChart.add_entries(batch_entries)  # This will draw once with all entries
+"
+
+[sub_resource type="GDScript" id="GDScript_g04nq"]
+script/source = "extends VBoxContainer
+
+@onready var MainControl = $\"../../../../../../..\"
+@onready var ScrollPane = $\"..\"
+
+@onready var ImageContainer = $\"../../../AspectRatioContainer\"
+
+const PROGRAM_ROW_SCENE = preload(\"res://scenes/ProgramMenu/programRow.tscn\")
+const ROW_HEIGHT = 100
+const ADD_EX_BUTTON_HEIGHT = 10
+
+
+func _ready():
+	MainControl.active_program_changed.connect(_on_active_program_changed)
+	_populate(MainControl.active_program)
+
+
+func _on_active_program_changed(program: HypertrophyProgramResource) -> void:
+	_populate(program)
+
+
+func _update_image_visibility() -> void:
+	# ImageContainer should be visible only when ScrollPane has no children
+	# (excluding potential non-program children - adjust as needed)
+	ImageContainer.visible = get_child_count() == 0
+
+
+func _populate(program: HypertrophyProgramResource) -> void:
+	for child in get_children():
+		child.queue_free()
+
+	if program == null:
+		ScrollPane.custom_minimum_size.y = 0
+		_update_image_visibility()
+		return
+
+	var sorted_entries = program.get_sorted_entries()
+
+	# Add button before the first row
+	_add_insert_button(program, 0)
+
+	for i in sorted_entries.size():
+		var entry = sorted_entries[i]
+
+		var row = PROGRAM_ROW_SCENE.instantiate()
+		add_child(row)
+		row.load_entry(entry, program)
+
+		# Add button after every row (insert at position i+1)
+		_add_insert_button(program, i + 1)
+
+	# Each row has one button above it, plus one trailing button
+	var total_buttons = sorted_entries.size() + 1
+	custom_minimum_size.y = sorted_entries.size() * ROW_HEIGHT + total_buttons * ADD_EX_BUTTON_HEIGHT
+	
+	_update_image_visibility()
+
+
+func _add_insert_button(program: HypertrophyProgramResource, insert_order: int) -> void:
+	var choose_btn := ChooseExerciseButton.new()
+	
+	# Set up the button properties
+	choose_btn.selector_scene = preload(\"res://scenes/elements/ChooseExercise/chooseExercise.tscn\")
+	choose_btn.prompt_text = \"Choose exercise for \" + program.name
+	choose_btn.placeholder_text = \"+ Add exercise\"
+	choose_btn.custom_minimum_size = Vector2(0, ADD_EX_BUTTON_HEIGHT)
+	choose_btn.add_theme_font_size_override(\"font_size\", 20)
+	
+	choose_btn.text = \"+\"
+	
+	# Stretch to full width of the VBox
+	choose_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	
+	# Connect to its signal
+	choose_btn.exercise_selected.connect(_on_exercise_selected.bind(program, insert_order))
+	
+	add_child(choose_btn)
+
+
+func _on_exercise_selected(target: String, exercise_entry: ProgramExerciseEntry, program: HypertrophyProgramResource, insert_order: int) -> void:
+	print(\"Exercise selected for program: \", program.name)
+	print(\"Target muscle: \", target)
+	print(\"Exercise: \", exercise_entry.exercise.name if exercise_entry.exercise else \"Unknown\")
+	print(\"Insert at order: \", insert_order)
+	
+	DataManager.add_exercise_at_order(program,
+	exercise_entry.exercise,
+	ProgramExerciseEntry.ExerciseType.STRAIGHT_SET,
+	insert_order
+	)
+	
+	# Refresh the UI to show the new exercise
+	_populate(program)
+	
+	# Emit signal that active program changed (since its entries were modified)
+	MainControl.active_program_changed.emit(program)
+	
+	NotificationManager.notify(exercise_entry.exercise.name + \" added to \" + program.name + \" program\")
+"
+
+[node name="ProgramMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_c1scn")
+
+[node name="CurrentSceneContent" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("1_lw7x4")
+
+[node name="MC" type="MarginContainer" parent="CurrentSceneContent"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="HC" type="HBoxContainer" parent="CurrentSceneContent/MC"]
+layout_mode = 2
+
+[node name="LeftPanel" type="Panel" parent="CurrentSceneContent/MC/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.5
+
+[node name="VC" type="VBoxContainer" parent="CurrentSceneContent/MC/HC/LeftPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ProgramListPanel" type="Panel" parent="CurrentSceneContent/MC/HC/LeftPanel/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+script = SubResource("GDScript_3q1cd")
+
+[node name="VC" type="VBoxContainer" parent="CurrentSceneContent/MC/HC/LeftPanel/VC/ProgramListPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MC" type="MarginContainer" parent="CurrentSceneContent/MC/HC/LeftPanel/VC/ProgramListPanel/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="VBoxPrograms" type="VBoxContainer" parent="CurrentSceneContent/MC/HC/LeftPanel/VC/ProgramListPanel/VC/MC"]
+layout_mode = 2
+alignment = 1
+
+[node name="AddProgramButton" type="Button" parent="CurrentSceneContent/MC/HC/LeftPanel/VC/ProgramListPanel/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_stretch_ratio = 0.15
+icon = ExtResource("3_7xkbn")
+icon_alignment = 1
+expand_icon = true
+script = ExtResource("3_k1hxr")
+keyboard_scene = ExtResource("4_qd1us")
+placeholder_text = ""
+
+[node name="NoUserPanel" type="Panel" parent="CurrentSceneContent/MC/HC/LeftPanel/VC/ProgramListPanel"]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Label" type="Label" parent="CurrentSceneContent/MC/HC/LeftPanel/VC/ProgramListPanel/NoUserPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "No current user
+Please
+Select user"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ProgramSummaryPanel" type="Panel" parent="CurrentSceneContent/MC/HC/LeftPanel/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_stretch_ratio = 0.7
+script = SubResource("GDScript_6ft4m")
+
+[node name="PieChartPanel" type="Panel" parent="CurrentSceneContent/MC/HC/LeftPanel/VC/ProgramSummaryPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="PieChart" parent="CurrentSceneContent/MC/HC/LeftPanel/VC/ProgramSummaryPanel/PieChartPanel" instance=ExtResource("5_np1x7")]
+layout_mode = 1
+
+[node name="NoProgramPanel" type="Panel" parent="CurrentSceneContent/MC/HC/LeftPanel/VC/ProgramSummaryPanel"]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Label" type="Label" parent="CurrentSceneContent/MC/HC/LeftPanel/VC/ProgramSummaryPanel/NoProgramPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "Select program"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="RightPanel" type="Panel" parent="CurrentSceneContent/MC/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="MC" type="MarginContainer" parent="CurrentSceneContent/MC/HC/RightPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ScrollContainer" type="ScrollContainer" parent="CurrentSceneContent/MC/HC/RightPanel/MC"]
+layout_mode = 2
+follow_focus = true
+
+[node name="ScrollContent" type="VBoxContainer" parent="CurrentSceneContent/MC/HC/RightPanel/MC/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 0
+script = SubResource("GDScript_g04nq")
+
+[node name="AspectRatioContainer" type="AspectRatioContainer" parent="CurrentSceneContent/MC/HC/RightPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="TextureRect" type="TextureRect" parent="CurrentSceneContent/MC/HC/RightPanel/AspectRatioContainer"]
+layout_mode = 2
+texture = ExtResource("5_nm1fp")
+expand_mode = 2
+
+[connection signal="text_changed" from="CurrentSceneContent/MC/HC/LeftPanel/VC/ProgramListPanel/VC/AddProgramButton" to="CurrentSceneContent/MC/HC/LeftPanel/VC/ProgramListPanel" method="_on_add_program_button_text_changed"]

@@ -1,0 +1,374 @@
+[gd_scene load_steps=8 format=3 uid="uid://ci4tjfpx77sfm"]
+
+[ext_resource type="Theme" uid="uid://f6n2yykmqd16" path="res://assets/style/theme.tres" id="1_svj02"]
+[ext_resource type="Script" path="res://scenes/elements/valueInput/ValueInput.gd" id="2_e07u2"]
+[ext_resource type="Texture2D" uid="uid://ckxu85xwh7omx" path="res://assets/icons/add-box-svgrepo-com.svg" id="3_symoo"]
+
+[sub_resource type="GDScript" id="GDScript_aww8w"]
+script/source = "extends Control
+
+# Reference to the parent — gives access to current_session, exercise, add_set, remove_set, edit_set
+@export var parent_exerciseSessionRow: Control
+
+# The set this row represents. Set by the parent before adding to the scene tree.
+var set_data: ExerciseSetResource
+# Corresponding set from the previous session (may be null if it didn't exist).
+var previous_set: ExerciseSetResource
+
+@onready var previous_weight_label = $Panel/HC/MainPanel/VC/WeightPanel/HC/PreviousWeightPanel/VC/PreviousWeightLabel
+@onready var previous_reps_label   = $Panel/HC/MainPanel/VC/RepsPanel/HC/PreviousRepsPanel/VC/PreviousRepsLabel
+@onready var value_input_weight    = $Panel/HC/MainPanel/VC/WeightPanel/HC/InputWeightPanel/ValueInputWeight
+@onready var value_input_reps      = $Panel/HC/MainPanel/VC/RepsPanel/HC/InputRepsPanel/ValueInputReps
+@onready var set_num_label         = $Panel/HC/SetNumPanel/HC/SetNumLabel
+@onready var add_set_button        = $AddSetButton
+
+
+func _ready() -> void:
+	# --- Set number label ---
+	set_num_label.text = str(set_data.set_number)
+
+	# --- Previous session values ---
+	# Find the matching set (same set_number) from the most recent previous session.
+	var previous_sets := SessionManager.find_most_recent_sets(parent_exerciseSessionRow.exercise)
+	previous_set = null
+	for s in previous_sets:
+		if s.set_number == set_data.set_number:
+			previous_set = s
+			break
+
+	if previous_set != null:
+		previous_weight_label.text = str(previous_set.weight)
+		previous_reps_label.text   = str(previous_set.reps)
+	else:
+		previous_weight_label.text = \"-\"
+		previous_reps_label.text   = \"-\"
+
+	# --- Pre-fill inputs with previous values as a starting hint ---
+	# TODO: check ValueInput API — assuming .value is the setter
+	if previous_set != null:
+		value_input_weight.value = previous_set.weight
+		value_input_reps.value   = previous_set.reps
+
+	# --- Add set button: only visible on the last row ---
+	_refresh_add_button_visibility()
+
+	# --- Connect input signals ---
+	value_input_weight.value_confirmed.connect(_on_weight_confirmed)
+	value_input_reps.value_confirmed.connect(_on_reps_confirmed)
+	add_set_button.pressed.connect(_on_add_set_pressed)
+
+
+# ---------------------------------------------------------------------------
+# Visibility
+# ---------------------------------------------------------------------------
+
+func _refresh_add_button_visibility() -> void:
+	var total_sets: int = parent_exerciseSessionRow.exercise_sets.size()
+	add_set_button.visible = (set_data.set_number == total_sets)
+
+
+# ---------------------------------------------------------------------------
+# Input callbacks
+# ---------------------------------------------------------------------------
+
+func _on_weight_confirmed(value) -> void:
+	parent_exerciseSessionRow.edit_set(set_data.set_number, value, value_input_reps.value)
+
+func _on_reps_confirmed(value) -> void:
+	parent_exerciseSessionRow.edit_set(set_data.set_number, value_input_weight.value, value)
+
+func _on_add_set_pressed() -> void:
+	parent_exerciseSessionRow.add_set(value_input_weight.value, value_input_reps.value)
+"
+
+[sub_resource type="GDScript" id="GDScript_vch07"]
+script/source = "extends Panel
+@onready var root = $\"../../..\"
+@onready var label = $HC/Label
+@onready var set_num_label = $HC/SetNumLabel
+
+# Called when the node enters the scene tree for the first time.
+func _ready():
+	var exercise = root.set_data.exercise
+	#print(exercise.target_muscle)
+	
+	
+	var style = StyleBoxFlat.new()
+	style.bg_color = MuscleData.MUSCLE_COLORS.get(exercise.target_muscle, Color.WHITE)
+	#print(style.bg_color)
+	style.set_border_width_all(2)  
+	style.border_color = Color.WHITE
+	
+	self.add_theme_stylebox_override(\"normal\", style)
+	self.add_theme_stylebox_override(\"hover\", style)
+	self.add_theme_stylebox_override(\"pressed\", style)
+	label.add_theme_color_override(\"font_color\", Color.BLACK)
+	set_num_label.add_theme_color_override(\"font_color\", Color.BLACK)
+	
+	add_theme_stylebox_override(\"panel\", style)
+	# Force a redraw
+	#queue_redraw()
+
+# Called every frame. 'delta' is the elapsed time since the previous frame.
+func _process(delta):
+	pass
+"
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_siyap"]
+bg_color = Color(0.133196, 0.133196, 0.133196, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_amanx"]
+bg_color = Color(0.133196, 0.133196, 0.133196, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+
+[node name="ExerciseSessionRowSet" type="Control"]
+custom_minimum_size = Vector2(0, 100)
+layout_mode = 3
+anchor_top = 0.008
+anchor_right = 1.0
+anchor_bottom = 0.208
+offset_top = -3.84
+offset_bottom = 0.159996
+grow_horizontal = 2
+grow_vertical = 2
+script = SubResource("GDScript_aww8w")
+
+[node name="Panel" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("1_svj02")
+
+[node name="HC" type="HBoxContainer" parent="Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 0
+
+[node name="SetNumPanel" type="Panel" parent="Panel/HC"]
+modulate = Color(1, 1, 1, 0.607843)
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+size_flags_stretch_ratio = 0.8
+script = SubResource("GDScript_vch07")
+
+[node name="HC" type="HBoxContainer" parent="Panel/HC/SetNumPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+alignment = 1
+
+[node name="Label" type="Label" parent="Panel/HC/SetNumPanel/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 40
+text = " Set"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="SetNumLabel" type="Label" parent="Panel/HC/SetNumPanel/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 40
+text = "0"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="MainPanel" type="Panel" parent="Panel/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VC" type="VBoxContainer" parent="Panel/HC/MainPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 0
+
+[node name="WeightPanel" type="Panel" parent="Panel/HC/MainPanel/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="HC" type="HBoxContainer" parent="Panel/HC/MainPanel/VC/WeightPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 0
+
+[node name="LabelPanel" type="Panel" parent="Panel/HC/MainPanel/VC/WeightPanel/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.6
+
+[node name="Label" type="Label" parent="Panel/HC/MainPanel/VC/WeightPanel/HC/LabelPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 35
+text = "W:"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="InputWeightPanel" type="Panel" parent="Panel/HC/MainPanel/VC/WeightPanel/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ValueInputWeight" type="Button" parent="Panel/HC/MainPanel/VC/WeightPanel/HC/InputWeightPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("2_e07u2")
+step = 0.1
+
+[node name="PreviousWeightPanel" type="Panel" parent="Panel/HC/MainPanel/VC/WeightPanel/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.8
+theme_override_styles/panel = SubResource("StyleBoxFlat_siyap")
+
+[node name="VC" type="VBoxContainer" parent="Panel/HC/MainPanel/VC/WeightPanel/HC/PreviousWeightPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 0
+alignment = 1
+
+[node name="Label" type="Label" parent="Panel/HC/MainPanel/VC/WeightPanel/HC/PreviousWeightPanel/VC"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.691357, 0.691357, 0.691357, 0.784314)
+theme_override_colors/font_shadow_color = Color(0.691357, 0.691357, 0.691357, 0.784314)
+theme_override_colors/font_outline_color = Color(0.691357, 0.691357, 0.691357, 0.784314)
+theme_override_font_sizes/font_size = 20
+text = "Previous Weight"
+horizontal_alignment = 1
+
+[node name="PreviousWeightLabel" type="Label" parent="Panel/HC/MainPanel/VC/WeightPanel/HC/PreviousWeightPanel/VC"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.691357, 0.691357, 0.691357, 0.784314)
+theme_override_colors/font_shadow_color = Color(0.691357, 0.691357, 0.691357, 0.784314)
+theme_override_colors/font_outline_color = Color(0.691357, 0.691357, 0.691357, 0.784314)
+theme_override_font_sizes/font_size = 20
+text = "0"
+horizontal_alignment = 1
+
+[node name="RepsPanel" type="Panel" parent="Panel/HC/MainPanel/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="HC" type="HBoxContainer" parent="Panel/HC/MainPanel/VC/RepsPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 0
+
+[node name="LabelPanel" type="Panel" parent="Panel/HC/MainPanel/VC/RepsPanel/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.6
+
+[node name="Label" type="Label" parent="Panel/HC/MainPanel/VC/RepsPanel/HC/LabelPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 35
+text = "R:"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="InputRepsPanel" type="Panel" parent="Panel/HC/MainPanel/VC/RepsPanel/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ValueInputReps" type="Button" parent="Panel/HC/MainPanel/VC/RepsPanel/HC/InputRepsPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("2_e07u2")
+max_value = 40.0
+
+[node name="PreviousRepsPanel" type="Panel" parent="Panel/HC/MainPanel/VC/RepsPanel/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.8
+theme_override_styles/panel = SubResource("StyleBoxFlat_amanx")
+
+[node name="VC" type="VBoxContainer" parent="Panel/HC/MainPanel/VC/RepsPanel/HC/PreviousRepsPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 0
+alignment = 1
+
+[node name="Label" type="Label" parent="Panel/HC/MainPanel/VC/RepsPanel/HC/PreviousRepsPanel/VC"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.691357, 0.691357, 0.691357, 0.784314)
+theme_override_colors/font_shadow_color = Color(0.691357, 0.691357, 0.691357, 0.784314)
+theme_override_colors/font_outline_color = Color(0.691357, 0.691357, 0.691357, 0.784314)
+theme_override_font_sizes/font_size = 20
+text = "Previous Reps"
+horizontal_alignment = 1
+
+[node name="PreviousRepsLabel" type="Label" parent="Panel/HC/MainPanel/VC/RepsPanel/HC/PreviousRepsPanel/VC"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.691357, 0.691357, 0.691357, 0.784314)
+theme_override_colors/font_shadow_color = Color(0.691357, 0.691357, 0.691357, 0.784314)
+theme_override_colors/font_outline_color = Color(0.691357, 0.691357, 0.691357, 0.784314)
+theme_override_font_sizes/font_size = 20
+text = "0"
+horizontal_alignment = 1
+
+[node name="AddSetButton" type="Button" parent="."]
+custom_minimum_size = Vector2(0, 25)
+layout_mode = 1
+anchors_preset = -1
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_bottom = 25.0
+grow_horizontal = 2
+theme = ExtResource("1_svj02")
+icon = ExtResource("3_symoo")
+icon_alignment = 1
+expand_icon = true

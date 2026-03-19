@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://c27t3a226roix"]
+
+[ext_resource type="Script" path="res://scenes/elements/valueInput/ValueInput.gd" id="1_xihs3"]
+
+[node name="ValueInput" type="Button"]
+script = ExtResource("1_xihs3")

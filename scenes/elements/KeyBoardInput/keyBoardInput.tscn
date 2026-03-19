@@ -1,0 +1,362 @@
+[gd_scene load_steps=3 format=3 uid="uid://b8kt1prsxu3fy"]
+
+[ext_resource type="Theme" uid="uid://f6n2yykmqd16" path="res://assets/style/theme.tres" id="1_86kid"]
+
+[sub_resource type="GDScript" id="GDScript_00stk"]
+resource_name = "keyBoardInput"
+script/source = "extends Control
+
+signal text_entered(text)
+signal canceled
+
+@onready var InputBufferLabel = $Panel/MC/VC/HC_row1/PanelOut/InputBuffer
+@onready var BackSpace = $Panel/MC/VC/HC_row1/BackSpace
+@onready var keyRow1 = $Panel/MC/VC/HC_row2 # Children: HSeparator,Q,W,E,R,T,Y,U,I,O,P,HSeparator2
+@onready var keyRow2 = $Panel/MC/VC/HC_row3 # Children: HSeparator2,A,S,D,F,G,H,J,K,L,HSeparator
+@onready var keyRow3 = $Panel/MC/VC/HC_row4 # Children: HSeparator3,Z,X,C,V,B,N,M,HSeparator2
+@onready var spaceBar = $Panel/MC/VC/HC_row5/Space
+@onready var cancelButton = $Panel/MC/VC/HC_row5/Cancel
+@onready var enterButton = $Panel/MC/VC/HC_row5/Enter
+
+
+var buffer : String = \"\"
+
+func _ready():
+	connect_keys(keyRow1)
+	connect_keys(keyRow2)
+	connect_keys(keyRow3)
+
+	BackSpace.pressed.connect(_on_backspace)
+	spaceBar.pressed.connect(_on_space)
+	enterButton.pressed.connect(_on_enter)
+	cancelButton.pressed.connect(_on_cancel)
+	
+	cancelButton.call_deferred(\"grab_focus\")
+
+	update_label()
+
+
+func connect_keys(row: Node):
+	for child in row.get_children():
+		if child is Button:
+			child.pressed.connect(_on_key_pressed.bind(child.text))
+
+
+func _on_key_pressed(letter):
+	buffer += letter
+	update_label()
+
+
+func _on_backspace():
+	if buffer.length() > 0:
+		buffer = buffer.substr(0, buffer.length() - 1)
+	update_label()
+
+
+func _on_space():
+	buffer += \" \"
+	update_label()
+
+
+func _on_enter():
+	text_entered.emit(buffer)
+	queue_free()  # This will trigger tree_exited in KeyboardInputButton
+
+
+func _on_cancel():
+	canceled.emit()
+	queue_free()  # This will trigger tree_exited in KeyboardInputButton
+
+
+func update_label():
+	InputBufferLabel.text = buffer
+"
+
+[node name="KeyBoardInput" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = SubResource("GDScript_00stk")
+
+[node name="Panel" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("1_86kid")
+
+[node name="MC" type="MarginContainer" parent="Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="VC" type="VBoxContainer" parent="Panel/MC"]
+layout_mode = 2
+
+[node name="HC_row1" type="HBoxContainer" parent="Panel/MC/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="PanelOut" type="Panel" parent="Panel/MC/VC/HC_row1"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="InputBuffer" type="Label" parent="Panel/MC/VC/HC_row1/PanelOut"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="BackSpace" type="Button" parent="Panel/MC/VC/HC_row1"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.5
+text = "BackSpace"
+
+[node name="HC_row2" type="HBoxContainer" parent="Panel/MC/VC"]
+layout_mode = 2
+size_flags_vertical = 6
+theme_override_constants/separation = 10
+
+[node name="HSeparator" type="HSeparator" parent="Panel/MC/VC/HC_row2"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Q" type="Button" parent="Panel/MC/VC/HC_row2"]
+custom_minimum_size = Vector2(50, 50)
+layout_mode = 2
+size_flags_vertical = 4
+text = "Q"
+
+[node name="W" type="Button" parent="Panel/MC/VC/HC_row2"]
+custom_minimum_size = Vector2(50, 50)
+layout_mode = 2
+size_flags_vertical = 4
+text = "W"
+
+[node name="E" type="Button" parent="Panel/MC/VC/HC_row2"]
+custom_minimum_size = Vector2(50, 50)
+layout_mode = 2
+size_flags_vertical = 4
+text = "E"
+
+[node name="R" type="Button" parent="Panel/MC/VC/HC_row2"]
+custom_minimum_size = Vector2(50, 50)
+layout_mode = 2
+size_flags_vertical = 4
+text = "R"
+
+[node name="T" type="Button" parent="Panel/MC/VC/HC_row2"]
+custom_minimum_size = Vector2(50, 50)
+layout_mode = 2
+size_flags_vertical = 4
+text = "T"
+
+[node name="Y" type="Button" parent="Panel/MC/VC/HC_row2"]
+custom_minimum_size = Vector2(50, 50)
+layout_mode = 2
+size_flags_vertical = 4
+text = "Y"
+
+[node name="U" type="Button" parent="Panel/MC/VC/HC_row2"]
+custom_minimum_size = Vector2(50, 50)
+layout_mode = 2
+size_flags_vertical = 4
+text = "U"
+
+[node name="I" type="Button" parent="Panel/MC/VC/HC_row2"]
+custom_minimum_size = Vector2(50, 50)
+layout_mode = 2
+size_flags_vertical = 4
+text = "I"
+
+[node name="O" type="Button" parent="Panel/MC/VC/HC_row2"]
+custom_minimum_size = Vector2(50, 50)
+layout_mode = 2
+size_flags_vertical = 4
+text = "O"
+
+[node name="P" type="Button" parent="Panel/MC/VC/HC_row2"]
+custom_minimum_size = Vector2(50, 50)
+layout_mode = 2
+size_flags_vertical = 4
+text = "P"
+
+[node name="HSeparator2" type="HSeparator" parent="Panel/MC/VC/HC_row2"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 3.37
+
+[node name="HC_row3" type="HBoxContainer" parent="Panel/MC/VC"]
+layout_mode = 2
+size_flags_vertical = 6
+theme_override_constants/separation = 10
+
+[node name="HSeparator2" type="HSeparator" parent="Panel/MC/VC/HC_row3"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="A" type="Button" parent="Panel/MC/VC/HC_row3"]
+custom_minimum_size = Vector2(50, 50)
+layout_mode = 2
+size_flags_vertical = 4
+text = "A"
+
+[node name="S" type="Button" parent="Panel/MC/VC/HC_row3"]
+custom_minimum_size = Vector2(50, 50)
+layout_mode = 2
+size_flags_vertical = 4
+text = "S"
+
+[node name="D" type="Button" parent="Panel/MC/VC/HC_row3"]
+custom_minimum_size = Vector2(50, 50)
+layout_mode = 2
+size_flags_vertical = 4
+text = "D"
+
+[node name="F" type="Button" parent="Panel/MC/VC/HC_row3"]
+custom_minimum_size = Vector2(50, 50)
+layout_mode = 2
+size_flags_vertical = 4
+text = "F"
+
+[node name="G" type="Button" parent="Panel/MC/VC/HC_row3"]
+custom_minimum_size = Vector2(50, 50)
+layout_mode = 2
+size_flags_vertical = 4
+text = "G"
+
+[node name="H" type="Button" parent="Panel/MC/VC/HC_row3"]
+custom_minimum_size = Vector2(50, 50)
+layout_mode = 2
+size_flags_vertical = 4
+text = "H"
+
+[node name="J" type="Button" parent="Panel/MC/VC/HC_row3"]
+custom_minimum_size = Vector2(50, 50)
+layout_mode = 2
+size_flags_vertical = 4
+text = "J"
+
+[node name="K" type="Button" parent="Panel/MC/VC/HC_row3"]
+custom_minimum_size = Vector2(50, 50)
+layout_mode = 2
+size_flags_vertical = 4
+text = "K"
+
+[node name="L" type="Button" parent="Panel/MC/VC/HC_row3"]
+custom_minimum_size = Vector2(50, 50)
+layout_mode = 2
+size_flags_vertical = 4
+text = "L"
+
+[node name="HSeparator" type="HSeparator" parent="Panel/MC/VC/HC_row3"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 2.35
+
+[node name="HC_row4" type="HBoxContainer" parent="Panel/MC/VC"]
+layout_mode = 2
+size_flags_vertical = 6
+theme_override_constants/separation = 10
+
+[node name="HSeparator3" type="HSeparator" parent="Panel/MC/VC/HC_row4"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.75
+
+[node name="Z" type="Button" parent="Panel/MC/VC/HC_row4"]
+custom_minimum_size = Vector2(50, 50)
+layout_mode = 2
+size_flags_vertical = 4
+text = "Z"
+
+[node name="X" type="Button" parent="Panel/MC/VC/HC_row4"]
+custom_minimum_size = Vector2(50, 50)
+layout_mode = 2
+size_flags_vertical = 4
+text = "X"
+
+[node name="C" type="Button" parent="Panel/MC/VC/HC_row4"]
+custom_minimum_size = Vector2(50, 50)
+layout_mode = 2
+size_flags_vertical = 4
+text = "C"
+
+[node name="V" type="Button" parent="Panel/MC/VC/HC_row4"]
+custom_minimum_size = Vector2(50, 50)
+layout_mode = 2
+size_flags_vertical = 4
+text = "V"
+
+[node name="B" type="Button" parent="Panel/MC/VC/HC_row4"]
+custom_minimum_size = Vector2(50, 50)
+layout_mode = 2
+size_flags_vertical = 4
+text = "B"
+
+[node name="N" type="Button" parent="Panel/MC/VC/HC_row4"]
+custom_minimum_size = Vector2(50, 50)
+layout_mode = 2
+size_flags_vertical = 4
+text = "N"
+
+[node name="M" type="Button" parent="Panel/MC/VC/HC_row4"]
+custom_minimum_size = Vector2(50, 50)
+layout_mode = 2
+size_flags_vertical = 4
+text = "M"
+
+[node name="HSeparator2" type="HSeparator" parent="Panel/MC/VC/HC_row4"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 1.86
+
+[node name="HC_row5" type="HBoxContainer" parent="Panel/MC/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Cancel" type="Button" parent="Panel/MC/VC/HC_row5"]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+size_flags_horizontal = 2
+text = "Cancel"
+
+[node name="HSeparator" type="HSeparator" parent="Panel/MC/VC/HC_row5"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.1
+
+[node name="Space" type="Button" parent="Panel/MC/VC/HC_row5"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+text = "Space"
+
+[node name="HSeparator2" type="HSeparator" parent="Panel/MC/VC/HC_row5"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.1
+
+[node name="Enter" type="Button" parent="Panel/MC/VC/HC_row5"]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+size_flags_horizontal = 10
+text = "Enter"

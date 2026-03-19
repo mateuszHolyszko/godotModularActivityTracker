@@ -1,0 +1,141 @@
+[gd_scene load_steps=3 format=3 uid="uid://bx7vvp56bjv2x"]
+
+[ext_resource type="Theme" uid="uid://f6n2yykmqd16" path="res://assets/style/theme.tres" id="1_m41du"]
+
+[sub_resource type="GDScript" id="GDScript_0clm3"]
+script/source = "extends Control
+
+signal option_selected(option : String)
+signal canceled
+
+@onready var buttonCancel = $Panel/VC/PanelTop/HC/CancelButton
+@onready var promptLabel = $Panel/VC/PanelTop/HC/Prompt
+@onready var optionsContainer = $Panel/VC/PanelBot/HC/MarginContainer/VFlowOptionContainer
+
+@export var button_size : Vector2 = Vector2(200, 60)
+
+var options : Array[String] = []
+
+
+func _ready():
+	buttonCancel.pressed.connect(_on_cancel)
+
+
+func setup(prompt : String, option_list : Array[String]):
+	promptLabel.text = prompt
+	options = option_list
+	_create_buttons()
+
+
+func _create_buttons():
+
+	for child in optionsContainer.get_children():
+		child.queue_free()
+
+	for i in options.size():
+		var option = options[i]
+		var btn := Button.new()
+		btn.text = option
+		btn.custom_minimum_size = button_size
+		btn.pressed.connect(_on_option_pressed.bind(option))
+		optionsContainer.add_child(btn)
+		
+		# Grab focus on the first button after it's fully added
+		if i == 0:
+			btn.call_deferred(\"grab_focus\")
+
+
+func _on_option_pressed(option : String):
+	option_selected.emit(option)
+	queue_free()
+
+
+func _on_cancel():
+	canceled.emit()
+	queue_free()
+"
+
+[node name="ChooseMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = SubResource("GDScript_0clm3")
+
+[node name="Panel" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("1_m41du")
+
+[node name="VC" type="VBoxContainer" parent="Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="PanelTop" type="Panel" parent="Panel/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_stretch_ratio = 0.15
+
+[node name="HC" type="HBoxContainer" parent="Panel/VC/PanelTop"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Prompt" type="Label" parent="Panel/VC/PanelTop/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 30
+text = "Prompt"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="CancelButton" type="Button" parent="Panel/VC/PanelTop/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.25
+theme_override_font_sizes/font_size = 30
+text = "Cancel"
+
+[node name="PanelBot" type="Panel" parent="Panel/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="HC" type="HBoxContainer" parent="Panel/VC/PanelBot"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="HSeparator" type="HSeparator" parent="Panel/VC/PanelBot/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.25
+
+[node name="MarginContainer" type="MarginContainer" parent="Panel/VC/PanelBot/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VFlowOptionContainer" type="VFlowContainer" parent="Panel/VC/PanelBot/HC/MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+alignment = 1
+
+[node name="HSeparator2" type="HSeparator" parent="Panel/VC/PanelBot/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.25

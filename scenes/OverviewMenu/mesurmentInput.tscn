@@ -1,0 +1,437 @@
+[gd_scene load_steps=7 format=3 uid="uid://wvyel7u8ylwx"]
+
+[ext_resource type="Script" path="res://scenes/OverviewMenu/mesurmentInput.gd" id="1_e0l3e"]
+[ext_resource type="Theme" uid="uid://f6n2yykmqd16" path="res://assets/style/theme.tres" id="1_o4oiv"]
+[ext_resource type="Script" path="res://scenes/elements/valueInput/ValueInput.gd" id="2_wdvp7"]
+[ext_resource type="Script" path="res://scenes/elements/plotter/Plotter2D.gd" id="4_g2re8"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_g71lb"]
+bg_color = Color(0.6, 0.6, 0.6, 0)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_5qtjg"]
+bg_color = Color(0.6, 0.6, 0.6, 0)
+border_color = Color(0.8, 0.8, 0.8, 0)
+
+[node name="MesurmentInput" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_e0l3e")
+
+[node name="CurrentSceneContent" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("1_o4oiv")
+
+[node name="MarginContainer" type="MarginContainer" parent="CurrentSceneContent"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="HBoxContainer" type="HBoxContainer" parent="CurrentSceneContent/MarginContainer"]
+layout_mode = 2
+theme = ExtResource("1_o4oiv")
+
+[node name="LeftPanel" type="Panel" parent="CurrentSceneContent/MarginContainer/HBoxContainer"]
+clip_contents = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.6
+theme = ExtResource("1_o4oiv")
+
+[node name="MarginContainer" type="MarginContainer" parent="CurrentSceneContent/MarginContainer/HBoxContainer/LeftPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="VBoxMesurments" type="VBoxContainer" parent="CurrentSceneContent/MarginContainer/HBoxContainer/LeftPanel/MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_stretch_ratio = 0.6
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="CurrentSceneContent/MarginContainer/HBoxContainer/LeftPanel/MarginContainer/VBoxMesurments"]
+layout_mode = 2
+alignment = 1
+
+[node name="HSeparator2" type="HSeparator" parent="CurrentSceneContent/MarginContainer/HBoxContainer/LeftPanel/MarginContainer/VBoxMesurments/HBoxContainer2"]
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+size_flags_horizontal = 2
+
+[node name="Label" type="Label" parent="CurrentSceneContent/MarginContainer/HBoxContainer/LeftPanel/MarginContainer/VBoxMesurments/HBoxContainer2"]
+layout_mode = 2
+text = "Arms"
+
+[node name="HSeparator3" type="HSeparator" parent="CurrentSceneContent/MarginContainer/HBoxContainer/LeftPanel/MarginContainer/VBoxMesurments/HBoxContainer2"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 1.45
+
+[node name="Arms" type="Button" parent="CurrentSceneContent/MarginContainer/HBoxContainer/LeftPanel/MarginContainer/VBoxMesurments/HBoxContainer2"]
+custom_minimum_size = Vector2(150, 0)
+layout_direction = 2
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Arms"
+script = ExtResource("2_wdvp7")
+value = 30.0
+step = 0.25
+min_value = 1.0
+max_value = 80.0
+
+[node name="Label2" type="Label" parent="CurrentSceneContent/MarginContainer/HBoxContainer/LeftPanel/MarginContainer/VBoxMesurments/HBoxContainer2"]
+layout_mode = 2
+text = "[Cm]"
+
+[node name="HSeparator" type="HSeparator" parent="CurrentSceneContent/MarginContainer/HBoxContainer/LeftPanel/MarginContainer/VBoxMesurments/HBoxContainer2"]
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+size_flags_horizontal = 10
+
+[node name="HBoxContainer3" type="HBoxContainer" parent="CurrentSceneContent/MarginContainer/HBoxContainer/LeftPanel/MarginContainer/VBoxMesurments"]
+layout_mode = 2
+alignment = 1
+
+[node name="HSeparator2" type="HSeparator" parent="CurrentSceneContent/MarginContainer/HBoxContainer/LeftPanel/MarginContainer/VBoxMesurments/HBoxContainer3"]
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+size_flags_horizontal = 2
+
+[node name="Label" type="Label" parent="CurrentSceneContent/MarginContainer/HBoxContainer/LeftPanel/MarginContainer/VBoxMesurments/HBoxContainer3"]
+layout_mode = 2
+text = "Chest"
+
+[node name="HSeparator3" type="HSeparator" parent="CurrentSceneContent/MarginContainer/HBoxContainer/LeftPanel/MarginContainer/VBoxMesurments/HBoxContainer3"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 1.43
+
+[node name="Chest" type="Button" parent="CurrentSceneContent/MarginContainer/HBoxContainer/LeftPanel/MarginContainer/VBoxMesurments/HBoxContainer3"]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Chest"
+script = ExtResource("2_wdvp7")
+value = 105.0
+step = 0.25
+min_value = 1.0
+max_value = 200.0
+
+[node name="Label2" type="Label" parent="CurrentSceneContent/MarginContainer/HBoxContainer/LeftPanel/MarginContainer/VBoxMesurments/HBoxContainer3"]
+layout_mode = 2
+text = "[Cm]"
+
+[node name="HSeparator" type="HSeparator" parent="CurrentSceneContent/MarginContainer/HBoxContainer/LeftPanel/MarginContainer/VBoxMesurments/HBoxContainer3"]
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+size_flags_horizontal = 10
+
+[node name="HBoxContainer4" type="HBoxContainer" parent="CurrentSceneContent/MarginContainer/HBoxContainer/LeftPanel/MarginContainer/VBoxMesurments"]
+layout_mode = 2
+alignment = 1
+
+[node name="HSeparator2" type="HSeparator" parent="CurrentSceneContent/MarginContainer/HBoxContainer/LeftPanel/MarginContainer/VBoxMesurments/HBoxContainer4"]
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+size_flags_horizontal = 2
+
+[node name="Label" type="Label" parent="CurrentSceneContent/MarginContainer/HBoxContainer/LeftPanel/MarginContainer/VBoxMesurments/HBoxContainer4"]
+layout_mode = 2
+text = "Waist"
+
+[node name="HSeparator3" type="HSeparator" parent="CurrentSceneContent/MarginContainer/HBoxContainer/LeftPanel/MarginContainer/VBoxMesurments/HBoxContainer4"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 1.43
+
+[node name="Waist" type="Button" parent="CurrentSceneContent/MarginContainer/HBoxContainer/LeftPanel/MarginContainer/VBoxMesurments/HBoxContainer4"]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Waist"
+script = ExtResource("2_wdvp7")
+value = 100.0
+step = 0.25
+min_value = 1.0
+max_value = 200.0
+
+[node name="Label2" type="Label" parent="CurrentSceneContent/MarginContainer/HBoxContainer/LeftPanel/MarginContainer/VBoxMesurments/HBoxContainer4"]
+layout_mode = 2
+text = "[Cm]"
+
+[node name="HSeparator" type="HSeparator" parent="CurrentSceneContent/MarginContainer/HBoxContainer/LeftPanel/MarginContainer/VBoxMesurments/HBoxContainer4"]
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+size_flags_horizontal = 10
+
+[node name="HBoxContainer5" type="HBoxContainer" parent="CurrentSceneContent/MarginContainer/HBoxContainer/LeftPanel/MarginContainer/VBoxMesurments"]
+layout_mode = 2
+alignment = 1
+
+[node name="HSeparator2" type="HSeparator" parent="CurrentSceneContent/MarginContainer/HBoxContainer/LeftPanel/MarginContainer/VBoxMesurments/HBoxContainer5"]
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+size_flags_horizontal = 2
+
+[node name="Label" type="Label" parent="CurrentSceneContent/MarginContainer/HBoxContainer/LeftPanel/MarginContainer/VBoxMesurments/HBoxContainer5"]
+layout_mode = 2
+text = "Thigh"
+
+[node name="HSeparator3" type="HSeparator" parent="CurrentSceneContent/MarginContainer/HBoxContainer/LeftPanel/MarginContainer/VBoxMesurments/HBoxContainer5"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 1.43
+
+[node name="Thigh" type="Button" parent="CurrentSceneContent/MarginContainer/HBoxContainer/LeftPanel/MarginContainer/VBoxMesurments/HBoxContainer5"]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Thigh"
+script = ExtResource("2_wdvp7")
+value = 62.0
+step = 0.25
+min_value = 1.0
+max_value = 150.0
+
+[node name="Label2" type="Label" parent="CurrentSceneContent/MarginContainer/HBoxContainer/LeftPanel/MarginContainer/VBoxMesurments/HBoxContainer5"]
+layout_mode = 2
+text = "[Cm]"
+
+[node name="HSeparator" type="HSeparator" parent="CurrentSceneContent/MarginContainer/HBoxContainer/LeftPanel/MarginContainer/VBoxMesurments/HBoxContainer5"]
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+size_flags_horizontal = 10
+
+[node name="VSeparator" type="VSeparator" parent="CurrentSceneContent/MarginContainer/HBoxContainer/LeftPanel/MarginContainer/VBoxMesurments"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_styles/separator = SubResource("StyleBoxFlat_g71lb")
+
+[node name="HBoxContainer" type="HBoxContainer" parent="CurrentSceneContent/MarginContainer/HBoxContainer/LeftPanel/MarginContainer/VBoxMesurments"]
+layout_mode = 2
+alignment = 1
+
+[node name="HSeparator2" type="HSeparator" parent="CurrentSceneContent/MarginContainer/HBoxContainer/LeftPanel/MarginContainer/VBoxMesurments/HBoxContainer"]
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+size_flags_horizontal = 2
+
+[node name="Label" type="Label" parent="CurrentSceneContent/MarginContainer/HBoxContainer/LeftPanel/MarginContainer/VBoxMesurments/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 0
+text = "Weight"
+
+[node name="HSeparator3" type="HSeparator" parent="CurrentSceneContent/MarginContainer/HBoxContainer/LeftPanel/MarginContainer/VBoxMesurments/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Weight" type="Button" parent="CurrentSceneContent/MarginContainer/HBoxContainer/LeftPanel/MarginContainer/VBoxMesurments/HBoxContainer"]
+custom_minimum_size = Vector2(150, 0)
+layout_direction = 2
+layout_mode = 2
+size_flags_horizontal = 10
+text = "Weight"
+script = ExtResource("2_wdvp7")
+value = 78.0
+step = 0.25
+min_value = 30.0
+max_value = 150.0
+
+[node name="Label2" type="Label" parent="CurrentSceneContent/MarginContainer/HBoxContainer/LeftPanel/MarginContainer/VBoxMesurments/HBoxContainer"]
+layout_mode = 2
+text = "[Kg]"
+
+[node name="HSeparator" type="HSeparator" parent="CurrentSceneContent/MarginContainer/HBoxContainer/LeftPanel/MarginContainer/VBoxMesurments/HBoxContainer"]
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+size_flags_horizontal = 10
+
+[node name="SaveButton" type="Button" parent="CurrentSceneContent/MarginContainer/HBoxContainer/LeftPanel/MarginContainer/VBoxMesurments"]
+layout_mode = 2
+text = "Save"
+
+[node name="ExitButton" type="Button" parent="CurrentSceneContent/MarginContainer/HBoxContainer/LeftPanel/MarginContainer/VBoxMesurments"]
+layout_mode = 2
+size_flags_vertical = 4
+text = "Exit"
+
+[node name="RightPanel" type="Panel" parent="CurrentSceneContent/MarginContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme = ExtResource("1_o4oiv")
+theme_override_styles/panel = SubResource("StyleBoxFlat_5qtjg")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CurrentSceneContent/MarginContainer/HBoxContainer/RightPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="PlotterInputsPanel" type="Panel" parent="CurrentSceneContent/MarginContainer/HBoxContainer/RightPanel/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_stretch_ratio = 0.25
+theme = ExtResource("1_o4oiv")
+
+[node name="MarginContainer" type="MarginContainer" parent="CurrentSceneContent/MarginContainer/HBoxContainer/RightPanel/VBoxContainer/PlotterInputsPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="HBoxContainer" type="HBoxContainer" parent="CurrentSceneContent/MarginContainer/HBoxContainer/RightPanel/VBoxContainer/PlotterInputsPanel/MarginContainer"]
+layout_mode = 2
+
+[node name="OptionButton" type="OptionButton" parent="CurrentSceneContent/MarginContainer/HBoxContainer/RightPanel/VBoxContainer/PlotterInputsPanel/MarginContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+alignment = 1
+item_count = 5
+selected = 0
+popup/item_0/text = "Weight"
+popup/item_0/id = 0
+popup/item_1/text = "Arms"
+popup/item_1/id = 1
+popup/item_2/text = "Chest"
+popup/item_2/id = 2
+popup/item_3/text = "Waist"
+popup/item_3/id = 3
+popup/item_4/text = "Thigh"
+popup/item_4/id = 4
+
+[node name="DayInputPanel" type="Panel" parent="CurrentSceneContent/MarginContainer/HBoxContainer/RightPanel/VBoxContainer/PlotterInputsPanel/MarginContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.3
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CurrentSceneContent/MarginContainer/HBoxContainer/RightPanel/VBoxContainer/PlotterInputsPanel/MarginContainer/HBoxContainer/DayInputPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Label" type="Label" parent="CurrentSceneContent/MarginContainer/HBoxContainer/RightPanel/VBoxContainer/PlotterInputsPanel/MarginContainer/HBoxContainer/DayInputPanel/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_font_sizes/font_size = 24
+text = "Days"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="DayInput" type="Button" parent="CurrentSceneContent/MarginContainer/HBoxContainer/RightPanel/VBoxContainer/PlotterInputsPanel/MarginContainer/HBoxContainer/DayInputPanel/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_font_sizes/font_size = 24
+script = ExtResource("2_wdvp7")
+max_value = 31.0
+
+[node name="MonthInputPanel2" type="Panel" parent="CurrentSceneContent/MarginContainer/HBoxContainer/RightPanel/VBoxContainer/PlotterInputsPanel/MarginContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.3
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CurrentSceneContent/MarginContainer/HBoxContainer/RightPanel/VBoxContainer/PlotterInputsPanel/MarginContainer/HBoxContainer/MonthInputPanel2"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Label" type="Label" parent="CurrentSceneContent/MarginContainer/HBoxContainer/RightPanel/VBoxContainer/PlotterInputsPanel/MarginContainer/HBoxContainer/MonthInputPanel2/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_font_sizes/font_size = 24
+text = "Months"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="MonthInput" type="Button" parent="CurrentSceneContent/MarginContainer/HBoxContainer/RightPanel/VBoxContainer/PlotterInputsPanel/MarginContainer/HBoxContainer/MonthInputPanel2/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_font_sizes/font_size = 24
+script = ExtResource("2_wdvp7")
+value = 2.0
+max_value = 12.0
+
+[node name="YearInputPanel3" type="Panel" parent="CurrentSceneContent/MarginContainer/HBoxContainer/RightPanel/VBoxContainer/PlotterInputsPanel/MarginContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.3
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CurrentSceneContent/MarginContainer/HBoxContainer/RightPanel/VBoxContainer/PlotterInputsPanel/MarginContainer/HBoxContainer/YearInputPanel3"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Label" type="Label" parent="CurrentSceneContent/MarginContainer/HBoxContainer/RightPanel/VBoxContainer/PlotterInputsPanel/MarginContainer/HBoxContainer/YearInputPanel3/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_font_sizes/font_size = 24
+text = "Years"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="YearInput" type="Button" parent="CurrentSceneContent/MarginContainer/HBoxContainer/RightPanel/VBoxContainer/PlotterInputsPanel/MarginContainer/HBoxContainer/YearInputPanel3/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_font_sizes/font_size = 24
+script = ExtResource("2_wdvp7")
+max_value = 80.0
+
+[node name="PlotterPanel" type="Panel" parent="CurrentSceneContent/MarginContainer/HBoxContainer/RightPanel/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+theme = ExtResource("1_o4oiv")
+
+[node name="MarginContainer" type="MarginContainer" parent="CurrentSceneContent/MarginContainer/HBoxContainer/RightPanel/VBoxContainer/PlotterPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 30
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 30
+theme_override_constants/margin_bottom = 20
+
+[node name="plot" type="Control" parent="CurrentSceneContent/MarginContainer/HBoxContainer/RightPanel/VBoxContainer/PlotterPanel/MarginContainer"]
+layout_mode = 2
+script = ExtResource("4_g2re8")
+
+[connection signal="pressed" from="CurrentSceneContent/MarginContainer/HBoxContainer/LeftPanel/MarginContainer/VBoxMesurments/ExitButton" to="." method="_on_exit_button_pressed"]

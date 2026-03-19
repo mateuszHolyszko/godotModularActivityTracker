@@ -1,0 +1,106 @@
+[gd_scene load_steps=6 format=3 uid="uid://dwapybagn1n0d"]
+
+[ext_resource type="Script" path="res://scenes/elements/PieCharts/pieChart.gd" id="1_5jrtg"]
+[ext_resource type="Theme" uid="uid://f6n2yykmqd16" path="res://assets/style/theme.tres" id="1_bgs0o"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_pevgb"]
+
+[sub_resource type="GDScript" id="GDScript_unxei"]
+script/source = "extends Control
+
+# Config: get from root PieChart node
+@export_range(0,100) var radius_percent: float = 90.0
+@export var start_angle: float = -PI / 2
+const ARC_SEGMENTS := 48
+
+func _draw():
+	var root = get_parent().get_parent().get_parent() # PieChart node
+	if root.entries.size() == 0:
+		return
+
+	var panel_size = size
+	var center = panel_size / 2.0
+	var radius = min(panel_size.x, panel_size.y) * (radius_percent / 200.0)
+
+	var current_angle = start_angle
+
+	# Draw pie slices only - NO connection lines here anymore
+	for entry in root.entries:
+		var angle_span = (entry.value / root.total_value) * TAU
+
+		var points := PackedVector2Array()
+		points.append(center)
+
+		for i in range(ARC_SEGMENTS + 1):
+			var t = float(i) / ARC_SEGMENTS
+			var ang = lerp(entry.start_angle, entry.end_angle, t)
+			var p = center + Vector2(cos(ang), sin(ang)) * radius
+			points.append(p)
+
+		draw_colored_polygon(points, entry.color)
+		current_angle += angle_span
+	
+	# REMOVED: root.draw_connections(get_canvas_item())
+	# Connections are now handled by LineContainer and MarkerContainer
+"
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_k5h8d"]
+
+[node name="PieChart" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_5jrtg")
+
+[node name="Panel" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("1_bgs0o")
+
+[node name="HC" type="HBoxContainer" parent="Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="PieChartPanel" type="Panel" parent="Panel/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.8
+theme_override_styles/panel = SubResource("StyleBoxEmpty_pevgb")
+script = SubResource("GDScript_unxei")
+
+[node name="MarkerContainer" type="Node2D" parent="Panel/HC/PieChartPanel"]
+
+[node name="LineContainer" type="Node2D" parent="Panel/HC/PieChartPanel"]
+
+[node name="LegendPanel" type="Panel" parent="Panel/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("StyleBoxEmpty_k5h8d")
+
+[node name="MC" type="MarginContainer" parent="Panel/HC/LegendPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="VboxLegendsContainer" type="VBoxContainer" parent="Panel/HC/LegendPanel/MC"]
+layout_mode = 2
+theme_override_constants/separation = 0
+alignment = 1

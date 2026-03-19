@@ -1,0 +1,8 @@
+Later make similar to SelectUserPopup for Module (Running Hyperthropy Streaching), that works on main and persist with all
+			menus
+
+1.Menu -> Overview: later user will select main module focus (resistance traning, running, streching)
+			displays overview for that module eg. resistance module -> volume summary
+2.Menu -> Session:  'instance' of program
+3.Menu -> Program:  set up program, exercises are definied in Data Menu
+4.Menu -> Data:  settings and exercises for modules

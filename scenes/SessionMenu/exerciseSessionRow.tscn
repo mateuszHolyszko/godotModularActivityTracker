@@ -1,0 +1,146 @@
+[gd_scene load_steps=4 format=3 uid="uid://be1o4gnc1toei"]
+
+[ext_resource type="Theme" uid="uid://f6n2yykmqd16" path="res://assets/style/theme.tres" id="1_24j1w"]
+[ext_resource type="Texture2D" uid="uid://c5uqltdavmj4u" path="res://assets/icons/chevron-right-svgrepo-com.svg" id="2_uagvw"]
+
+[sub_resource type="GDScript" id="GDScript_rjgvt"]
+script/source = "extends Control
+
+var current_session: HypertrophySessionResource # TODO this should be gotten from its parent sessionMenu later
+var exercise: ExerciseResource
+var exercise_sets: Array[ExerciseSetResource]
+
+@onready var set_container = $Panel/HC/PanelMainContent/VC/Panel/VSetBoxContainer
+@onready var main_control = $\".\"
+
+@onready var exercise_button = $Panel/HC/PanelMainContent/VC/ExerciseButton # allows for switching exercise
+@onready var skip_exercise_button = $Panel/HC/SkipExerciseButton # when pressed looks for not filled sets and discardsthem
+
+const ROW_HEIGHT = 100
+const ADD_BUTTON_HEIGHT = 25
+
+func _ready() -> void:
+	exercise_sets = current_session.get_sets_for_exercise(exercise)
+	#print(exercise_sets)
+	_rebuild_set_list()
+	
+	# Color exercise_button by target muscle
+	var style = StyleBoxFlat.new()
+	style.bg_color = MuscleData.MUSCLE_COLORS.get(exercise.target_muscle, Color.WHITE)
+	style.set_border_width_all(2)  
+	style.border_color = Color.WHITE
+	
+	exercise_button.add_theme_stylebox_override(\"normal\", style)
+	exercise_button.add_theme_stylebox_override(\"hover\", style)
+	exercise_button.add_theme_stylebox_override(\"pressed\", style)
+	exercise_button.add_theme_color_override(\"font_color\", Color.BLACK)
+	exercise_button.text = exercise.name
+
+const EXERCISE_SESSION_ROW_SET_SCENE = preload(\"res://scenes/SessionMenu/exerciseSessionRowSet.tscn\")
+
+func _rebuild_set_list() -> void:
+	for child in set_container.get_children():
+		child.queue_free()
+
+	for s in exercise_sets:
+		var row = EXERCISE_SESSION_ROW_SET_SCENE.instantiate()
+		# Assign data before add_child so _ready() can read them
+		row.set_data = s
+		row.parent_exerciseSessionRow = self
+		set_container.add_child(row)
+
+	main_control.custom_minimum_size.y = (
+		exercise_sets.size() * ROW_HEIGHT + ADD_BUTTON_HEIGHT + 35 # 35 for exercise label
+	)
+
+func add_set(weight: float, reps: int) -> void:
+	var last_set: ExerciseSetResource = exercise_sets.back()
+	var new_set = SessionManager.log_set(exercise, weight, reps, last_set.set_number + 1)
+	exercise_sets.append(new_set)
+	_rebuild_set_list()
+
+	for row in set_container.get_children():
+		if row.has_method(\"_refresh_add_button_visibility\"):
+			row._refresh_add_button_visibility()
+	
+
+func remove_set(set_number: int) -> void:
+	SessionManager.remove_set(exercise, set_number)
+	exercise_sets = current_session.get_sets_for_exercise(exercise)
+	_rebuild_set_list()
+
+func edit_set(set_number: int, new_weight: float, new_reps: int) -> void:
+	SessionManager.edit_set(exercise, set_number, new_weight, new_reps)
+	exercise_sets = current_session.get_sets_for_exercise(exercise)
+	#_rebuild_set_list()
+"
+
+[node name="ExerciseSessionRow" type="Control"]
+custom_minimum_size = Vector2(0, 100)
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+script = SubResource("GDScript_rjgvt")
+
+[node name="Panel" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("1_24j1w")
+
+[node name="HC" type="HBoxContainer" parent="Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 0
+
+[node name="PanelMainContent" type="Panel" parent="Panel/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VC" type="VBoxContainer" parent="Panel/HC/PanelMainContent"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 0
+
+[node name="ExerciseButton" type="Button" parent="Panel/HC/PanelMainContent/VC"]
+custom_minimum_size = Vector2(0, 35)
+layout_mode = 2
+text = "Exercise"
+
+[node name="Panel" type="Panel" parent="Panel/HC/PanelMainContent/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="VSetBoxContainer" type="VBoxContainer" parent="Panel/HC/PanelMainContent/VC/Panel"]
+custom_minimum_size = Vector2(0, 125)
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 0
+
+[node name="SkipExerciseButton" type="Button" parent="Panel/HC"]
+custom_minimum_size = Vector2(25, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.0
+icon = ExtResource("2_uagvw")
+icon_alignment = 1
+expand_icon = true

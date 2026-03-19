@@ -1,0 +1,65 @@
+[gd_resource type="Resource" script_class="HypertrophySessionResource" load_steps=11 format=3]
+
+[ext_resource type="Script" path="res://db/scripts/exercise/exercise_resource.gd" id="1_0imjv"]
+[ext_resource type="Script" path="res://db/scripts/hyperthropyProgram/program_exercise_entry.gd" id="2_6yuni"]
+[ext_resource type="Resource" path="res://db/data/1773084129.484/programs/1773575574.589.tres" id="3_aeaby"]
+[ext_resource type="Script" path="res://db/scripts/hypertrophySession/hypertrophy_session_resource.gd" id="4_h8kkc"]
+
+[sub_resource type="Resource" id="Resource_pe7o6"]
+script = ExtResource("1_0imjv")
+id = "1773453398.707"
+name = "ROMANIAN DEADLIFT"
+target_muscle = "Hamstrings"
+bodyweight = false
+isolation = true
+tension_profile = 1
+intensity = 2
+rep_range = Vector2i(6, 10)
+
+[sub_resource type="Resource" id="Resource_xf577"]
+script = ExtResource("2_6yuni")
+order = 0
+exercise_type = 0
+exercise = SubResource("Resource_pe7o6")
+
+[sub_resource type="Resource" id="Resource_lmtrr"]
+script = ExtResource("1_0imjv")
+id = "1773522259.245"
+name = "PULLDOWN"
+target_muscle = "Back"
+bodyweight = false
+isolation = true
+tension_profile = 0
+intensity = 1
+rep_range = Vector2i(6, 10)
+
+[sub_resource type="Resource" id="Resource_xk382"]
+script = ExtResource("2_6yuni")
+order = 1
+exercise_type = 2
+exercise = SubResource("Resource_lmtrr")
+
+[sub_resource type="Resource" id="Resource_gxa24"]
+script = ExtResource("1_0imjv")
+id = "1773517273.283"
+name = "BENCH PRESS"
+target_muscle = "Chest"
+bodyweight = false
+isolation = true
+tension_profile = 0
+intensity = 1
+rep_range = Vector2i(3, 7)
+
+[sub_resource type="Resource" id="Resource_y64pl"]
+script = ExtResource("2_6yuni")
+order = 2
+exercise_type = 1
+exercise = SubResource("Resource_gxa24")
+
+[resource]
+script = ExtResource("4_h8kkc")
+program = ExtResource("3_aeaby")
+timestamp_start = 1773915442
+timestamp_end = 1773915448
+entries = Array[ExtResource("2_6yuni")]([SubResource("Resource_xf577"), SubResource("Resource_xk382"), SubResource("Resource_y64pl")])
+sets = Array[Resource("res://db/scripts/hypertrophySession/exercise_set_resource.gd")]([])

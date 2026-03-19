@@ -1,0 +1,150 @@
+[gd_scene load_steps=3 format=3 uid="uid://byqgv65dw5ad2"]
+
+[ext_resource type="Theme" uid="uid://f6n2yykmqd16" path="res://assets/style/theme.tres" id="1_5icpr"]
+
+[sub_resource type="GDScript" id="GDScript_8ov2q"]
+script/source = "extends Control
+
+@onready var state1_container = $CurrentSceneContent/State1Container  
+@onready var state2_container = $CurrentSceneContent/State2Container
+
+const STATE1_PANEL_PICK_PROGRAM = preload(\"res://scenes/SessionMenu/State1_panelPickProgram.tscn\")  
+const STATE2_PANEL_SESSION_SCENE = preload(\"res://scenes/SessionMenu/State2_panelSession.tscn\")
+
+var active_program : HypertrophyProgramResource = null:
+	set(value):
+		active_program = value
+		_update_state()
+
+# Keep references to current instances
+var _current_state1_instance: Control = null
+var _current_state2_instance: Control = null
+
+func _ready():
+	# Instantiate state1 initially
+	_instantiate_state1()
+	
+	# Connect to DataManager
+	DataManager.user_changed.connect(_on_user_changed)
+
+func _instantiate_state1():
+	_clear_state1_instance()
+	
+	_current_state1_instance = STATE1_PANEL_PICK_PROGRAM.instantiate()
+	state1_container.add_child(_current_state1_instance)
+	_connect_state1_signals()
+	
+	# Make sure state1 is visible initially
+	_current_state1_instance.show()
+	# Ensure state2 container is empty and hidden
+	_clear_state2_instance()
+
+func _connect_state1_signals():
+	if _current_state1_instance and is_instance_valid(_current_state1_instance):
+		# Disconnect any existing connections first to avoid duplicates
+		if _current_state1_instance.program_selected.is_connected(_on_program_selected):
+			_current_state1_instance.program_selected.disconnect(_on_program_selected)
+		_current_state1_instance.program_selected.connect(_on_program_selected)
+
+func _clear_state1_instance():
+	if _current_state1_instance != null and is_instance_valid(_current_state1_instance):
+		_current_state1_instance.queue_free()
+		_current_state1_instance = null
+
+func _update_state():
+	if active_program == null:
+		# Show state1, hide/clear state2
+		if _current_state1_instance:
+			_current_state1_instance.show()
+		_clear_state2_instance()
+	else:
+		# Hide state1 and show/instantiate state2
+		if _current_state1_instance:
+			_current_state1_instance.hide()
+		
+		# Only instantiate state2 if it doesn't exist or if program changed
+		if _current_state2_instance == null or not is_instance_valid(_current_state2_instance):
+			_instantiate_state2()
+		else:
+			# If state2 already exists, just show it and update if needed
+			_current_state2_instance.show()
+			# You might want to update the existing instance if the program changed
+			if _current_state2_instance.has_method(\"initialize\"):
+				_current_state2_instance.initialize(active_program)
+
+func _instantiate_state2():
+	_clear_state2_instance()
+	# Hide State1 Panel
+	state1_container.hide()
+	
+	_current_state2_instance = STATE2_PANEL_SESSION_SCENE.instantiate()
+	state2_container.add_child(_current_state2_instance)
+	
+	# Make sure state2 is visible
+	_current_state2_instance.show()
+	
+	# Pass active_program - use call_deferred to ensure the node is ready
+	if _current_state2_instance.has_method(\"initialize\"):
+		# Small delay to ensure the node is fully added to the scene tree
+		call_deferred(\"_initialize_state2\")
+
+func _initialize_state2():
+	if _current_state2_instance and is_instance_valid(_current_state2_instance) and _current_state2_instance.has_method(\"initialize\"):
+		_current_state2_instance.initialize(active_program)
+
+func _clear_state2_instance():
+	if _current_state2_instance != null and is_instance_valid(_current_state2_instance):
+		_current_state2_instance.queue_free()
+		_current_state2_instance = null
+
+func _on_program_selected(program: HypertrophyProgramResource):
+	print(\"Program selected: \", program.name if program else \"null\")
+	active_program = program
+
+func _on_user_changed(user):
+	# reset state machine
+	active_program = null
+	
+	# reload program list in state1
+	if _current_state1_instance and is_instance_valid(_current_state1_instance):
+		_current_state1_instance.reload_programs()
+	
+	# Make sure state1 is visible
+	if _current_state1_instance:
+		_current_state1_instance.show()
+	_clear_state2_instance()
+"
+
+[node name="SessionMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = SubResource("GDScript_8ov2q")
+
+[node name="CurrentSceneContent" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("1_5icpr")
+
+[node name="State2Container" type="Panel" parent="CurrentSceneContent"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="State1Container" type="Panel" parent="CurrentSceneContent"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2

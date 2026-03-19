@@ -1,0 +1,345 @@
+[gd_scene load_steps=6 format=3 uid="uid://bxkeo3bbccqlo"]
+
+[ext_resource type="Theme" uid="uid://f6n2yykmqd16" path="res://assets/style/theme.tres" id="1_cy78c"]
+
+[sub_resource type="GDScript" id="GDScript_ippak"]
+script/source = "extends Panel
+
+signal session_started(session: HypertrophySessionResource)
+
+@onready var scroll_content = $VC/HC/MC/VC/ScrollContainer/ScrollContnent
+@onready var finish_session_button = $VC/HC/LeftPanel/VC/SessionButtonsPanel/HC/FinishSessionButton
+@onready var abort_session_button = $VC/HC/LeftPanel/VC/SessionButtonsPanel/HC/AbortSessionButton
+
+const EXERCISE_SESSION_ROW_SCENE = preload(\"res://scenes/SessionMenu/exerciseSessionRow.tscn\")
+
+var current_session: HypertrophySessionResource
+var active_program: HypertrophyProgramResource
+
+
+func initialize(program: HypertrophyProgramResource) -> void:
+	active_program = program
+	_start_session()
+
+
+func _ready() -> void:
+	# Don't start session here anymore - wait for initialize()
+	pass
+
+
+func _start_session() -> void:
+	if active_program == null:
+		push_error(\"State2_panelSession: No active program provided!\")
+		return
+	
+	current_session = SessionManager.start_session(active_program)
+	
+	# Emit signal that session has started
+	session_started.emit(current_session)
+
+	for entry in current_session.get_sorted_entries():
+		var row = EXERCISE_SESSION_ROW_SCENE.instantiate()
+		row.current_session = current_session
+		row.exercise = entry.exercise
+		scroll_content.add_child(row)
+
+	finish_session_button.pressed.connect(_on_finish_pressed)
+	abort_session_button.pressed.connect(_on_abort_pressed)
+
+
+func _on_finish_pressed() -> void:
+	SessionManager.end_session()
+	NotificationManager.notify(\"Session Finished\")
+	# TODO: navigate back / show summary screen
+
+
+func _on_abort_pressed() -> void:
+	# TODO: show confirmation dialog before aborting
+	_abort_session()
+
+
+func _abort_session() -> void:
+	# Remove all sets that were logged during this session
+	current_session.sets.clear()
+	# End it so is_active() returns false, then delete the saved file
+	SessionManager.end_session()
+	# TODO: delete the .tres file from disk (need the path helper from SessionManager — consider exposing _get_session_dir or a delete_session() method)
+	# TODO: navigate back
+	NotificationManager.notify(\"Session Aborted\")
+"
+
+[sub_resource type="GDScript" id="GDScript_7ja76"]
+script/source = "extends Panel
+
+@onready var main_control = $\"../..\"
+@onready var start_time_label = $HC/StartTimePanel/HC/StartTimeLabel
+@onready var elapsed_time_label = $HC/ElapsedTimePanel2/HC/ElapsedTimeLabel
+@onready var average_time_label = $HC/AverageTimePanel3/HC/AverageTimeLabel
+
+var currentSession: HypertrophySessionResource
+var time_zone_offset: int = 0
+
+# Called when the node enters the scene tree for the first time.
+func _ready():
+	# Get the local timezone offset (in seconds)
+	var local_time_dict = Time.get_time_dict_from_system()
+	var utc_time_dict = Time.get_time_dict_from_system(true)
+	
+	# Calculate offset in seconds
+	var local_total = local_time_dict.hour * 3600 + local_time_dict.minute * 60 + local_time_dict.second
+	var utc_total = utc_time_dict.hour * 3600 + utc_time_dict.minute * 60 + utc_time_dict.second
+	time_zone_offset = local_total - utc_total
+	
+	# Adjust for day boundary crossing
+	if time_zone_offset < -43200:  # Less than -12 hours
+		time_zone_offset += 86400
+	elif time_zone_offset > 43200:  # More than 12 hours
+		time_zone_offset -= 86400
+	
+	# Find the session panel and connect to its signal
+	if main_control and main_control.has_signal(\"session_started\"):
+		main_control.session_started.connect(_on_session_started)
+	else:
+		push_error(\"Could not find session panel or session_started signal\")
+
+func _on_session_started(session: HypertrophySessionResource):
+	currentSession = session
+	update_labels()
+
+# Called every frame. 'delta' is the elapsed time since the previous frame.
+func _process(delta):
+	# Update elapsed time more frequently when session is active
+	if currentSession and currentSession.is_active():
+		update_elapsed_time()
+
+func update_labels():
+	if not currentSession:
+		return
+	
+	update_start_time()
+	update_elapsed_time()
+	# Average time calculation would need additional logic
+	# For now, just set a placeholder
+	average_time_label.text = \"0\"
+
+func update_start_time():
+	if currentSession.timestamp_start > 0:
+		# Apply timezone offset to convert UTC to local
+		var local_timestamp = currentSession.timestamp_start + time_zone_offset
+		var time_dict = Time.get_time_dict_from_unix_time(local_timestamp)
+		# Format as HH:MM with leading zeros
+		start_time_label.text = \"%02d:%02d\" % [time_dict.hour, time_dict.minute]
+	else:
+		start_time_label.text = \"--:--\"
+
+func update_elapsed_time():
+	if currentSession.is_active():
+		# For active session, calculate current duration
+		var current_duration = Time.get_unix_time_from_system() - currentSession.timestamp_start
+		elapsed_time_label.text = _format_duration(current_duration)
+	elif currentSession.timestamp_end > 0:
+		# For completed session, use stored duration
+		elapsed_time_label.text = _format_duration(currentSession.get_duration())
+	else:
+		elapsed_time_label.text = \"0:00\"
+
+func _format_duration(seconds: float) -> String:
+	var total_seconds = int(seconds)
+	var hours = total_seconds / 3600
+	var minutes = (total_seconds % 3600) / 60
+	var secs = total_seconds % 60
+	
+	if hours > 0:
+		return \"%d:%02d:%02d\" % [hours, minutes, secs]
+	else:
+		return \"%d:%02d\" % [minutes, secs]
+"
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_0gpup"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_2xaae"]
+content_margin_left = 10.0
+bg_color = Color(0.0784314, 0.0784314, 0.0784314, 1)
+
+[node name="State2PanelSession" type="Panel"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme = ExtResource("1_cy78c")
+script = SubResource("GDScript_ippak")
+
+[node name="VC" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 0
+
+[node name="PanelTimeBar" type="Panel" parent="VC"]
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_stretch_ratio = 0.1
+script = SubResource("GDScript_7ja76")
+
+[node name="HC" type="HBoxContainer" parent="VC/PanelTimeBar"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+alignment = 1
+
+[node name="StartTimePanel" type="Panel" parent="VC/PanelTimeBar/HC"]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+size_flags_horizontal = 2
+theme_override_styles/panel = SubResource("StyleBoxEmpty_0gpup")
+
+[node name="HC" type="HBoxContainer" parent="VC/PanelTimeBar/HC/StartTimePanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Label" type="Label" parent="VC/PanelTimeBar/HC/StartTimePanel/HC"]
+layout_mode = 2
+text = " Start Time: "
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="StartTimeLabel" type="Label" parent="VC/PanelTimeBar/HC/StartTimePanel/HC"]
+layout_mode = 2
+text = "null"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ElapsedTimePanel2" type="Panel" parent="VC/PanelTimeBar/HC"]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+size_flags_horizontal = 6
+theme_override_styles/panel = SubResource("StyleBoxEmpty_0gpup")
+
+[node name="HC" type="HBoxContainer" parent="VC/PanelTimeBar/HC/ElapsedTimePanel2"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Label" type="Label" parent="VC/PanelTimeBar/HC/ElapsedTimePanel2/HC"]
+layout_mode = 2
+text = "Elapsed Time: "
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ElapsedTimeLabel" type="Label" parent="VC/PanelTimeBar/HC/ElapsedTimePanel2/HC"]
+layout_mode = 2
+text = "null"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="AverageTimePanel3" type="Panel" parent="VC/PanelTimeBar/HC"]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+size_flags_horizontal = 10
+theme_override_styles/panel = SubResource("StyleBoxEmpty_0gpup")
+
+[node name="HC" type="HBoxContainer" parent="VC/PanelTimeBar/HC/AverageTimePanel3"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Label" type="Label" parent="VC/PanelTimeBar/HC/AverageTimePanel3/HC"]
+layout_mode = 2
+text = "Avg Time: "
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="AverageTimeLabel" type="Label" parent="VC/PanelTimeBar/HC/AverageTimePanel3/HC"]
+layout_mode = 2
+text = "null"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HC" type="HBoxContainer" parent="VC"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 0
+
+[node name="LeftPanel" type="Panel" parent="VC/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.4
+
+[node name="VC" type="VBoxContainer" parent="VC/HC/LeftPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 0
+
+[node name="Panel" type="Panel" parent="VC/HC/LeftPanel/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="SessionButtonsPanel" type="Panel" parent="VC/HC/LeftPanel/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_stretch_ratio = 0.15
+
+[node name="HC" type="HBoxContainer" parent="VC/HC/LeftPanel/VC/SessionButtonsPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="FinishSessionButton" type="Button" parent="VC/HC/LeftPanel/VC/SessionButtonsPanel/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Finish"
+
+[node name="AbortSessionButton" type="Button" parent="VC/HC/LeftPanel/VC/SessionButtonsPanel/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Abort"
+
+[node name="MC" type="MarginContainer" parent="VC/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="VC" type="VBoxContainer" parent="VC/HC/MC"]
+layout_mode = 2
+
+[node name="ScrollContainer" type="ScrollContainer" parent="VC/HC/MC/VC"]
+layout_direction = 3
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_2xaae")
+
+[node name="ScrollContnent" type="VBoxContainer" parent="VC/HC/MC/VC/ScrollContainer"]
+layout_direction = 2
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 0

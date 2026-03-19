@@ -1,0 +1,264 @@
+[gd_scene load_steps=3 format=3 uid="uid://b4ormitgydvre"]
+
+[ext_resource type="Theme" uid="uid://f6n2yykmqd16" path="res://assets/style/theme.tres" id="1_k5oh0"]
+[ext_resource type="Script" path="res://scenes/DataMenu/dataMenu.gd" id="1_v7fep"]
+
+[node name="DataMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_v7fep")
+
+[node name="CurrentSceneContent" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("1_k5oh0")
+
+[node name="MC" type="MarginContainer" parent="CurrentSceneContent"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="VC" type="VBoxContainer" parent="CurrentSceneContent/MC"]
+layout_mode = 2
+
+[node name="HC" type="HBoxContainer" parent="CurrentSceneContent/MC/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="FiltersPanel" type="Panel" parent="CurrentSceneContent/MC/VC/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="HC" type="HBoxContainer" parent="CurrentSceneContent/MC/VC/HC/FiltersPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 0
+
+[node name="InputPanelTarget" type="Panel" parent="CurrentSceneContent/MC/VC/HC/FiltersPanel/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VC" type="VBoxContainer" parent="CurrentSceneContent/MC/VC/HC/FiltersPanel/HC/InputPanelTarget"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Label" type="Label" parent="CurrentSceneContent/MC/VC/HC/FiltersPanel/HC/InputPanelTarget/VC"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Target Muscle"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="InputTarget" type="OptionButton" parent="CurrentSceneContent/MC/VC/HC/FiltersPanel/HC/InputPanelTarget/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+alignment = 1
+item_count = 12
+fit_to_longest_item = false
+allow_reselect = true
+popup/item_0/text = "Chest"
+popup/item_0/id = 0
+popup/item_1/text = "Back"
+popup/item_1/id = 1
+popup/item_2/text = "Quads"
+popup/item_2/id = 2
+popup/item_3/text = "Hamstrings"
+popup/item_3/id = 3
+popup/item_4/text = "Glutes"
+popup/item_4/id = 4
+popup/item_5/text = "Shoulders"
+popup/item_5/id = 5
+popup/item_6/text = "Biceps"
+popup/item_6/id = 6
+popup/item_7/text = "Triceps"
+popup/item_7/id = 7
+popup/item_8/text = "Abs"
+popup/item_8/id = 8
+popup/item_9/text = "Calves"
+popup/item_9/id = 9
+popup/item_10/text = "Forearms"
+popup/item_10/id = 10
+popup/item_11/text = "All"
+popup/item_11/id = 11
+
+[node name="InputPanelIsolation" type="Panel" parent="CurrentSceneContent/MC/VC/HC/FiltersPanel/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VC" type="VBoxContainer" parent="CurrentSceneContent/MC/VC/HC/FiltersPanel/HC/InputPanelIsolation"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Label" type="Label" parent="CurrentSceneContent/MC/VC/HC/FiltersPanel/HC/InputPanelIsolation/VC"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Is Isolation?"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="InputIsolation" type="OptionButton" parent="CurrentSceneContent/MC/VC/HC/FiltersPanel/HC/InputPanelIsolation/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+alignment = 1
+item_count = 3
+popup/item_0/text = "True"
+popup/item_0/id = 0
+popup/item_1/text = "False"
+popup/item_1/id = 1
+popup/item_2/text = "All"
+popup/item_2/id = 2
+
+[node name="InputPanelIntensity" type="Panel" parent="CurrentSceneContent/MC/VC/HC/FiltersPanel/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VC" type="VBoxContainer" parent="CurrentSceneContent/MC/VC/HC/FiltersPanel/HC/InputPanelIntensity"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Label" type="Label" parent="CurrentSceneContent/MC/VC/HC/FiltersPanel/HC/InputPanelIntensity/VC"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Intensity"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="InputIntensity" type="OptionButton" parent="CurrentSceneContent/MC/VC/HC/FiltersPanel/HC/InputPanelIntensity/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+alignment = 1
+item_count = 4
+popup/item_0/text = "EASY"
+popup/item_0/id = 0
+popup/item_1/text = "MEDIUM"
+popup/item_1/id = 1
+popup/item_2/text = "HARD"
+popup/item_2/id = 2
+popup/item_3/text = "All"
+popup/item_3/id = 3
+
+[node name="InputPanelCurve" type="Panel" parent="CurrentSceneContent/MC/VC/HC/FiltersPanel/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VC" type="VBoxContainer" parent="CurrentSceneContent/MC/VC/HC/FiltersPanel/HC/InputPanelCurve"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Label" type="Label" parent="CurrentSceneContent/MC/VC/HC/FiltersPanel/HC/InputPanelCurve/VC"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Curve"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="InputCurve" type="OptionButton" parent="CurrentSceneContent/MC/VC/HC/FiltersPanel/HC/InputPanelCurve/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+alignment = 1
+item_count = 4
+popup/item_0/text = "CONCENTRIC"
+popup/item_0/id = 0
+popup/item_1/text = "ECCENTRIC"
+popup/item_1/id = 1
+popup/item_2/text = "ISOMETRIC"
+popup/item_2/id = 2
+popup/item_3/text = "All"
+popup/item_3/id = 3
+
+[node name="InputPanelBodyweight2" type="Panel" parent="CurrentSceneContent/MC/VC/HC/FiltersPanel/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VC" type="VBoxContainer" parent="CurrentSceneContent/MC/VC/HC/FiltersPanel/HC/InputPanelBodyweight2"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Label" type="Label" parent="CurrentSceneContent/MC/VC/HC/FiltersPanel/HC/InputPanelBodyweight2/VC"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Is Bodyweight?"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="InputBodyWeight" type="OptionButton" parent="CurrentSceneContent/MC/VC/HC/FiltersPanel/HC/InputPanelBodyweight2/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+alignment = 1
+item_count = 3
+popup/item_0/text = "True"
+popup/item_0/id = 0
+popup/item_1/text = "False"
+popup/item_1/id = 1
+popup/item_2/text = "All"
+popup/item_2/id = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CurrentSceneContent/MC/VC/HC/FiltersPanel"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="AddExButton" type="Button" parent="CurrentSceneContent/MC/VC/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.25
+text = "Add Exercise"
+
+[node name="ScrollPanelContainer" type="Panel" parent="CurrentSceneContent/MC/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_stretch_ratio = 5.0
+
+[node name="ScrollContainer" type="ScrollContainer" parent="CurrentSceneContent/MC/VC/ScrollPanelContainer"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+follow_focus = true
+
+[node name="ScrollContent" type="VBoxContainer" parent="CurrentSceneContent/MC/VC/ScrollPanelContainer/ScrollContainer"]
+custom_minimum_size = Vector2(0, 380)
+layout_mode = 2
+size_flags_horizontal = 3

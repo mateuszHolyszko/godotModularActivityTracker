@@ -1,0 +1,100 @@
+[gd_resource type="Resource" script_class="UserResource" load_steps=13 format=3]
+
+[ext_resource type="Script" path="res://db/scripts/user_resource.gd" id="1_5adie"]
+[ext_resource type="Script" path="res://db/scripts/measurement_resource.gd" id="1_glbsj"]
+
+[sub_resource type="Resource" id="Resource_me7tn"]
+script = ExtResource("1_glbsj")
+timestamp = 1773253620
+arms = 38.0
+chest = 105.0
+waist = 84.0
+thigh = 60.0
+weight = 75.0
+
+[sub_resource type="Resource" id="Resource_fmrtg"]
+script = ExtResource("1_glbsj")
+timestamp = 1772562420
+arms = 38.5
+chest = 105.5
+waist = 83.5
+thigh = 60.5
+weight = 74.5
+
+[sub_resource type="Resource" id="Resource_se8yi"]
+script = ExtResource("1_glbsj")
+timestamp = 1771698420
+arms = 39.0
+chest = 106.0
+waist = 83.0
+thigh = 61.0
+weight = 74.0
+
+[sub_resource type="Resource" id="Resource_umup7"]
+script = ExtResource("1_glbsj")
+timestamp = 1769970420
+arms = 39.5
+chest = 106.5
+waist = 82.5
+thigh = 61.5
+weight = 73.5
+
+[sub_resource type="Resource" id="Resource_pli60"]
+script = ExtResource("1_glbsj")
+timestamp = 1766946420
+arms = 40.0
+chest = 107.0
+waist = 82.0
+thigh = 62.0
+weight = 73.0
+
+[sub_resource type="Resource" id="Resource_35smx"]
+script = ExtResource("1_glbsj")
+timestamp = 1763058420
+arms = 40.5
+chest = 107.5
+waist = 81.5
+thigh = 62.5
+weight = 72.5
+
+[sub_resource type="Resource" id="Resource_y23k0"]
+script = ExtResource("1_glbsj")
+timestamp = 1756146420
+arms = 41.0
+chest = 108.0
+waist = 81.0
+thigh = 63.0
+weight = 72.0
+
+[sub_resource type="Resource" id="Resource_al7lr"]
+script = ExtResource("1_glbsj")
+timestamp = 1741458420
+arms = 41.5
+chest = 108.5
+waist = 80.5
+thigh = 63.5
+weight = 71.5
+
+[sub_resource type="Resource" id="Resource_yxkxr"]
+script = ExtResource("1_glbsj")
+timestamp = 1730226420
+arms = 42.0
+chest = 109.0
+waist = 80.0
+thigh = 64.0
+weight = 71.0
+
+[sub_resource type="Resource" id="Resource_syyxv"]
+script = ExtResource("1_glbsj")
+timestamp = 1773434990
+arms = 37.5
+chest = 104.5
+waist = 83.5
+thigh = 59.5
+weight = 74.5
+
+[resource]
+script = ExtResource("1_5adie")
+id = "1773426420.836"
+name = "test1"
+measurements = Array[ExtResource("1_glbsj")]([SubResource("Resource_me7tn"), SubResource("Resource_fmrtg"), SubResource("Resource_se8yi"), SubResource("Resource_umup7"), SubResource("Resource_pli60"), SubResource("Resource_35smx"), SubResource("Resource_y23k0"), SubResource("Resource_al7lr"), SubResource("Resource_yxkxr"), SubResource("Resource_syyxv")])

@@ -1,0 +1,122 @@
+[gd_scene load_steps=3 format=3 uid="uid://ced7e4bnntodp"]
+
+[ext_resource type="Theme" uid="uid://f6n2yykmqd16" path="res://assets/style/theme.tres" id="1_jllkc"]
+
+[sub_resource type="GDScript" id="GDScript_6wiu7"]
+script/source = "extends Control
+
+signal popup_closed
+signal user_selected(user: UserResource)
+
+@onready var bg_panel = $BG
+@onready var close_button = $Button
+@onready var user_list = $VBoxContainer
+
+func _ready():
+	# Connect signals
+	close_button.pressed.connect(_on_close_pressed)
+	
+	# Populate the list
+	populate_users()
+	
+	# Set focus to the close button
+	# Using call_deferred ensures it happens after the scene is fully ready
+	call_deferred(\"_set_initial_focus\")
+
+func _set_initial_focus():
+	close_button.grab_focus()
+
+func populate_users():
+
+	# clear existing entries (important if popup reused)
+	for child in user_list.get_children():
+		child.queue_free()
+
+	for user in DataManager.users:
+
+		var btn = Button.new()
+		btn.text = user.name
+		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
+		# connect button press to selection
+		btn.pressed.connect(_on_user_pressed.bind(user))
+
+		user_list.add_child(btn)
+
+func _on_user_pressed(user: UserResource):
+	user_selected.emit(user)
+	NotificationManager.notify(\"User switched to: \\n\"+user.name)
+	popup_closed.emit()
+
+func _on_close_pressed():
+	#hide()
+	popup_closed.emit()
+
+"
+
+[node name="UserPopup" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = SubResource("GDScript_6wiu7")
+
+[node name="BG" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 4
+theme = ExtResource("1_jllkc")
+
+[node name="Label" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -72.0
+offset_top = 12.0
+offset_right = 72.0
+offset_bottom = 42.0
+grow_horizontal = 2
+size_flags_horizontal = 4
+theme = ExtResource("1_jllkc")
+theme_override_font_sizes/font_size = 30
+text = "Select User:"
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.037
+anchor_top = 0.173
+anchor_right = 0.964
+anchor_bottom = 0.852
+offset_left = 0.4
+offset_top = 0.959999
+offset_right = -0.200012
+offset_bottom = 0.039978
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 4
+theme = ExtResource("1_jllkc")
+
+[node name="Button" type="Button" parent="."]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -80.0
+offset_top = -44.0
+offset_right = 80.0
+offset_bottom = -10.0
+grow_horizontal = 2
+grow_vertical = 0
+theme = ExtResource("1_jllkc")
+theme_override_font_sizes/font_size = 30
+text = "Close"

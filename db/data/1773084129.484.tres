@@ -1,0 +1,37 @@
+[gd_resource type="Resource" script_class="UserResource" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://db/scripts/measurement_resource.gd" id="1_h8w4t"]
+[ext_resource type="Script" path="res://db/scripts/user_resource.gd" id="1_u6270"]
+
+[sub_resource type="Resource" id="Resource_5fm1m"]
+script = ExtResource("1_h8w4t")
+timestamp = 1773084129
+arms = 38.0
+chest = 105.0
+waist = 84.0
+thigh = 60.0
+weight = 80.0
+
+[sub_resource type="Resource" id="Resource_n2t00"]
+script = ExtResource("1_h8w4t")
+timestamp = 1773084129
+arms = 39.0
+chest = 106.0
+waist = 83.0
+thigh = 61.0
+weight = 81.0
+
+[sub_resource type="Resource" id="Resource_onp0q"]
+script = ExtResource("1_h8w4t")
+timestamp = 1773419918
+arms = 38.5
+chest = 105.25
+waist = 83.5
+thigh = 60.5
+weight = 79.5
+
+[resource]
+script = ExtResource("1_u6270")
+id = "1773084129.484"
+name = "John"
+measurements = Array[ExtResource("1_h8w4t")]([SubResource("Resource_5fm1m"), SubResource("Resource_n2t00"), SubResource("Resource_onp0q")])

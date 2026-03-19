@@ -1,0 +1,461 @@
+[gd_scene load_steps=10 format=3 uid="uid://bi02jvyn76pw1"]
+
+[ext_resource type="Theme" uid="uid://f6n2yykmqd16" path="res://assets/style/theme.tres" id="1_1ccux"]
+[ext_resource type="Script" path="res://scenes/elements/KeyBoardInput/KeyboardInputButton.gd" id="2_rgd0e"]
+[ext_resource type="Script" path="res://scenes/elements/ChooseMenu/ChooseMenuButton.gd.gd" id="2_utfv8"]
+[ext_resource type="Script" path="res://scenes/elements/valueInput/ValueInput.gd" id="2_xireg"]
+[ext_resource type="PackedScene" uid="uid://bx7vvp56bjv2x" path="res://scenes/elements/ChooseMenu/chooseMenu.tscn" id="3_evg6i"]
+[ext_resource type="PackedScene" uid="uid://b8kt1prsxu3fy" path="res://scenes/elements/KeyBoardInput/keyBoardInput.tscn" id="3_m7x1s"]
+[ext_resource type="Texture2D" uid="uid://cieachpnmuni" path="res://assets/icons/trash-svgrepo-com.svg" id="7_xn3bi"]
+[ext_resource type="Texture2D" uid="uid://baiap2v6wmnw4" path="res://assets/icons/save-svgrepo-com.svg" id="8_7no88"]
+
+[sub_resource type="GDScript" id="GDScript_arard"]
+script/source = "extends Control
+
+# ── node refs ────────────────────────────────────────────────────────────────
+@onready var target_button    : ChooseMenuButton    = $Panel/HC/TargetButton
+@onready var name_input       : KeyboardInputButton = $Panel/HC/MainContent/VC/LabelPanel/ExerciseNameLabel
+@onready var input_bot_range  : ValueInput          = $Panel/HC/MainContent/VC/InputsPanelContainer/HC/InputPanelRepRange/VC/HC2/InputBotRange
+@onready var input_top_range  : ValueInput          = $Panel/HC/MainContent/VC/InputsPanelContainer/HC/InputPanelRepRange/VC/HC2/InputTopRange
+@onready var bodyweight_button: OptionButton = $Panel/HC/MainContent/VC/InputsPanelContainer/HC/InputPanelBodyweight/VC/InputBodyWeight
+@onready var isolation_button : OptionButton = $Panel/HC/MainContent/VC/InputsPanelContainer/HC/InputPanelIsolation/VC/InputIsolation
+@onready var intensity_button : ChooseMenuButton    = $Panel/HC/MainContent/VC/InputsPanelContainer/HC/InputPanelIntensity/VC/ChooseMenuButton
+@onready var curve_button     : ChooseMenuButton    = $Panel/HC/MainContent/VC/InputsPanelContainer/HC/InputPanelCurve/VC/ChooseMenuButton
+@onready var delete_button    : Button              = $Panel/HC/CRUDE_Panel/VC/DeleteButton
+@onready var save_button      : Button              = $Panel/HC/CRUDE_Panel/VC/SaveButtom
+
+# ── state ────────────────────────────────────────────────────────────────────
+## Null = new unsaved exercise. Non-null = loaded from the database.
+var _exercise: ExerciseResource = null
+
+# ── lifecycle ────────────────────────────────────────────────────────────────
+func _ready() -> void:
+	save_button.pressed.connect(_on_save_pressed)
+	delete_button.pressed.connect(_on_delete_pressed)
+
+	# All inputs that affect save-button validity
+	name_input.text_changed.connect(_on_any_changed)
+	target_button.option_changed.connect(func(opt): _apply_muscle_color(opt))
+	intensity_button.option_changed.connect(_on_any_changed)
+	curve_button.option_changed.connect(_on_any_changed)
+	bodyweight_button.item_selected.connect(_on_any_changed)
+	isolation_button.item_selected.connect(_on_any_changed)
+	# ValueInput doesn't block saving but wire for completeness
+	input_bot_range.value_changed.connect(_on_any_changed)
+	input_top_range.value_changed.connect(_on_any_changed)
+
+	_refresh_buttons()
+
+# ── public API ───────────────────────────────────────────────────────────────
+func load_exercise_resource(exercise: ExerciseResource) -> void:
+	_exercise = exercise
+
+	name_input.current_text = exercise.name
+	name_input.text         = exercise.name
+
+	target_button.current_option = exercise.target_muscle
+	target_button.text           = exercise.target_muscle
+	_apply_muscle_color(exercise.target_muscle)
+
+	var intensity_str: String = ExerciseResource.Intensity.keys()[exercise.intensity]
+	intensity_button.current_option = intensity_str
+	intensity_button.text = intensity_str
+
+	var tension_str: String = ExerciseResource.TensionProfile.keys()[exercise.tension_profile]
+	curve_button.current_option = tension_str
+	curve_button.text = tension_str
+
+	bodyweight_button.select(0 if exercise.bodyweight else 1)
+	isolation_button.select(0 if exercise.isolation  else 1)
+
+	input_bot_range.value = exercise.rep_range.x
+	input_bot_range.update_text()
+	input_top_range.value = exercise.rep_range.y
+	input_top_range.update_text()
+
+	_refresh_buttons()
+
+# ── validation ───────────────────────────────────────────────────────────────
+func _all_fields_filled() -> bool:
+	if name_input.current_text.strip_edges().is_empty():
+		return false
+	if target_button.current_option.is_empty():
+		return false
+	if intensity_button.current_option.is_empty():
+		return false
+	if curve_button.current_option.is_empty():
+		return false
+	if bodyweight_button.selected == -1:
+		return false
+	if isolation_button.selected == -1:
+		return false
+	return true
+
+func _refresh_buttons() -> void:
+	save_button.disabled   = not _all_fields_filled()
+	delete_button.disabled = _exercise == null
+
+# ── signal callbacks ─────────────────────────────────────────────────────────
+# option_changed(String), text_changed(String), value_changed(float)
+# — default param lets one handler cover all three signatures
+func _on_any_changed(_val = null) -> void:
+	_refresh_buttons()
+
+# ── button handlers ──────────────────────────────────────────────────────────
+func _on_save_pressed() -> void:
+	if not _all_fields_filled():
+		return
+
+	var tension  : ExerciseResource.TensionProfile = ExerciseResource.TensionProfile[curve_button.current_option]
+	var intensity: ExerciseResource.Intensity      = ExerciseResource.Intensity[intensity_button.current_option]
+	var bw: bool = bodyweight_button.get_item_text(bodyweight_button.selected) == \"True\"
+	var iso: bool = isolation_button.get_item_text(isolation_button.selected) == \"True\"
+	var rep_bot  : int  = int(input_bot_range.value)
+	var rep_top  : int  = int(input_top_range.value)
+
+	if _exercise == null:
+		# CREATE
+		_exercise = DataManager.create_exercise(
+			name_input.current_text.strip_edges(),
+			target_button.current_option,
+			bw, tension, intensity, iso,
+			rep_bot, rep_top
+		)
+	else:
+		# UPDATE
+		_exercise.name            = name_input.current_text.strip_edges()
+		_exercise.target_muscle   = target_button.current_option
+		_exercise.bodyweight      = bw
+		_exercise.isolation       = iso
+		_exercise.tension_profile = tension
+		_exercise.intensity       = intensity
+		_exercise.rep_range       = Vector2i(rep_bot, rep_top)
+		DataManager.save_exercises()
+
+	NotificationManager.notify(\"Exercise Saved\")
+	_refresh_buttons()
+
+func _on_delete_pressed() -> void:
+	if _exercise == null:
+		return
+	DataManager.delete_exercise(_exercise.id)
+	_exercise = null
+	NotificationManager.notify(\"Exercise Deleted\")
+	queue_free()
+
+
+func _apply_muscle_color(muscle: String) -> void:
+	var color: Color = MuscleData.get_color(muscle)
+	var is_default: bool = muscle.is_empty() or not MuscleData.MUSCLE_COLORS.has(muscle)
+
+	for btn in [target_button, name_input]:
+		if is_default:
+			btn.remove_theme_color_override(\"font_color\")
+			btn.remove_theme_stylebox_override(\"normal\")
+			btn.remove_theme_stylebox_override(\"hover\")
+			btn.remove_theme_stylebox_override(\"pressed\")
+		else:
+			var style := StyleBoxFlat.new()
+			style.bg_color = color
+			btn.add_theme_color_override(\"font_color\", Color.BLACK)
+			btn.add_theme_stylebox_override(\"normal\",  style)
+			# slightly darkened tint for hover/pressed feedback
+			var style_hover := style.duplicate()
+			style_hover.bg_color = color.darkened(0.1)
+			btn.add_theme_stylebox_override(\"hover\", style_hover)
+			var style_pressed := style.duplicate()
+			style_pressed.bg_color = color.darkened(0.2)
+			btn.add_theme_stylebox_override(\"pressed\", style_pressed)
+"
+
+[node name="ExerciseRow" type="Control"]
+custom_minimum_size = Vector2(0, 100)
+layout_mode = 3
+anchor_right = 1.0
+anchor_bottom = 0.208
+offset_bottom = 0.159996
+grow_horizontal = 2
+grow_vertical = 2
+script = SubResource("GDScript_arard")
+
+[node name="Panel" type="Panel" parent="."]
+custom_minimum_size = Vector2(0, 100)
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 89.52
+offset_bottom = -89.52
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("1_1ccux")
+
+[node name="HC" type="HBoxContainer" parent="Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 0
+
+[node name="TargetButton" type="Button" parent="Panel/HC"]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Target"
+script = ExtResource("2_utfv8")
+choose_menu_scene = ExtResource("3_evg6i")
+prompt_text = "Choose target muscle"
+options = Array[String](["Chest", "Back", "Quads", "Hamstrings", "Glutes", "Shoulders", "Biceps", "Triceps", "Abs", "Calves", "Forearms"])
+placeholder_text = "Target"
+button_size = Vector2(150, 100)
+
+[node name="MainContent" type="Panel" parent="Panel/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme = ExtResource("1_1ccux")
+
+[node name="VC" type="VBoxContainer" parent="Panel/HC/MainContent"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 0
+
+[node name="LabelPanel" type="Panel" parent="Panel/HC/MainContent/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_stretch_ratio = 0.5
+
+[node name="ExerciseNameLabel" type="Button" parent="Panel/HC/MainContent/VC/LabelPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "Exercise Name"
+script = ExtResource("2_rgd0e")
+keyboard_scene = ExtResource("3_m7x1s")
+placeholder_text = "Exercise Name"
+
+[node name="InputsPanelContainer" type="Panel" parent="Panel/HC/MainContent/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="HC" type="HBoxContainer" parent="Panel/HC/MainContent/VC/InputsPanelContainer"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 0
+
+[node name="InputPanelRepRange" type="Panel" parent="Panel/HC/MainContent/VC/InputsPanelContainer/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VC" type="VBoxContainer" parent="Panel/HC/MainContent/VC/InputsPanelContainer/HC/InputPanelRepRange"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Label" type="Label" parent="Panel/HC/MainContent/VC/InputsPanelContainer/HC/InputPanelRepRange/VC"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Rep Range"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HC" type="HBoxContainer" parent="Panel/HC/MainContent/VC/InputsPanelContainer/HC/InputPanelRepRange/VC"]
+layout_mode = 2
+
+[node name="Bot" type="Label" parent="Panel/HC/MainContent/VC/InputsPanelContainer/HC/InputPanelRepRange/VC/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 12
+text = "Bot"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Top" type="Label" parent="Panel/HC/MainContent/VC/InputsPanelContainer/HC/InputPanelRepRange/VC/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 12
+text = "Top"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HC2" type="HBoxContainer" parent="Panel/HC/MainContent/VC/InputsPanelContainer/HC/InputPanelRepRange/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 0
+
+[node name="InputBotRange" type="Button" parent="Panel/HC/MainContent/VC/InputsPanelContainer/HC/InputPanelRepRange/VC/HC2"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_font_sizes/font_size = 20
+script = ExtResource("2_xireg")
+value = 3.0
+min_value = 1.0
+max_value = 30.0
+
+[node name="InputTopRange" type="Button" parent="Panel/HC/MainContent/VC/InputsPanelContainer/HC/InputPanelRepRange/VC/HC2"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_font_sizes/font_size = 20
+script = ExtResource("2_xireg")
+value = 7.0
+min_value = 1.0
+max_value = 40.0
+
+[node name="InputPanelBodyweight" type="Panel" parent="Panel/HC/MainContent/VC/InputsPanelContainer/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VC" type="VBoxContainer" parent="Panel/HC/MainContent/VC/InputsPanelContainer/HC/InputPanelBodyweight"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Label" type="Label" parent="Panel/HC/MainContent/VC/InputsPanelContainer/HC/InputPanelBodyweight/VC"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Is Bodyweight?"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="InputBodyWeight" type="OptionButton" parent="Panel/HC/MainContent/VC/InputsPanelContainer/HC/InputPanelBodyweight/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+alignment = 1
+item_count = 2
+popup/item_0/text = "True"
+popup/item_0/id = 0
+popup/item_1/text = "False"
+popup/item_1/id = 1
+
+[node name="InputPanelIsolation" type="Panel" parent="Panel/HC/MainContent/VC/InputsPanelContainer/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VC" type="VBoxContainer" parent="Panel/HC/MainContent/VC/InputsPanelContainer/HC/InputPanelIsolation"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Label" type="Label" parent="Panel/HC/MainContent/VC/InputsPanelContainer/HC/InputPanelIsolation/VC"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Is Isolation?"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="InputIsolation" type="OptionButton" parent="Panel/HC/MainContent/VC/InputsPanelContainer/HC/InputPanelIsolation/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+alignment = 1
+item_count = 2
+popup/item_0/text = "True"
+popup/item_0/id = 0
+popup/item_1/text = "False"
+popup/item_1/id = 1
+
+[node name="InputPanelIntensity" type="Panel" parent="Panel/HC/MainContent/VC/InputsPanelContainer/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VC" type="VBoxContainer" parent="Panel/HC/MainContent/VC/InputsPanelContainer/HC/InputPanelIntensity"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Label" type="Label" parent="Panel/HC/MainContent/VC/InputsPanelContainer/HC/InputPanelIntensity/VC"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Intensity"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ChooseMenuButton" type="Button" parent="Panel/HC/MainContent/VC/InputsPanelContainer/HC/InputPanelIntensity/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+text = "Select..."
+script = ExtResource("2_utfv8")
+choose_menu_scene = ExtResource("3_evg6i")
+options = Array[String](["EASY", "MEDIUM", "HARD"])
+
+[node name="InputPanelCurve" type="Panel" parent="Panel/HC/MainContent/VC/InputsPanelContainer/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VC" type="VBoxContainer" parent="Panel/HC/MainContent/VC/InputsPanelContainer/HC/InputPanelCurve"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Label" type="Label" parent="Panel/HC/MainContent/VC/InputsPanelContainer/HC/InputPanelCurve/VC"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Curve"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ChooseMenuButton" type="Button" parent="Panel/HC/MainContent/VC/InputsPanelContainer/HC/InputPanelCurve/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+text = "-"
+script = ExtResource("2_utfv8")
+choose_menu_scene = ExtResource("3_evg6i")
+prompt_text = "Select resistance curve of exercise"
+options = Array[String](["CONCENTRIC", "ECCENTRIC", "ISOMETRIC"])
+placeholder_text = "-"
+
+[node name="CRUDE_Panel" type="Panel" parent="Panel/HC"]
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+size_flags_stretch_ratio = 0.01
+
+[node name="VC" type="VBoxContainer" parent="Panel/HC/CRUDE_Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="DeleteButton" type="Button" parent="Panel/HC/CRUDE_Panel/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+icon = ExtResource("7_xn3bi")
+icon_alignment = 1
+expand_icon = true
+
+[node name="SaveButtom" type="Button" parent="Panel/HC/CRUDE_Panel/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+icon = ExtResource("8_7no88")
+icon_alignment = 2
+expand_icon = true

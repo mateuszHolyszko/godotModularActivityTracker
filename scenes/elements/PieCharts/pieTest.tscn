@@ -1,0 +1,51 @@
+[gd_scene load_steps=4 format=3 uid="uid://kvoufunj3oes"]
+
+[ext_resource type="Theme" uid="uid://f6n2yykmqd16" path="res://assets/style/theme.tres" id="1_bpgws"]
+[ext_resource type="PackedScene" uid="uid://dwapybagn1n0d" path="res://scenes/elements/PieCharts/pieChart.tscn" id="2_hrxad"]
+
+[sub_resource type="GDScript" id="GDScript_8niow"]
+script/source = "extends Panel
+@onready var pieChart = $PieChart
+
+# Called when the node enters the scene tree for the first time.
+func _ready():
+	pieChart.add_entry(40,Color.RED,\"Red\")
+	pieChart.add_entry(25)
+	pieChart.add_entry(10, Color.GREEN,\"Green\")
+	pieChart.add_entry(25)
+	
+	#pieChart._calculate_midpoints()
+	#pieChart._rebuild_legend() 
+	#pieChart.draw_chart()
+	
+func _process(delta):
+	#pieChart._rebuild_legend()
+	pass
+	
+	
+
+
+
+
+"
+
+[node name="PieTest" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Panel" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("1_bpgws")
+script = SubResource("GDScript_8niow")
+
+[node name="PieChart" parent="Panel" instance=ExtResource("2_hrxad")]
+layout_mode = 1

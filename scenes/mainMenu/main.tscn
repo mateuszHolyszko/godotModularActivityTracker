@@ -1,0 +1,239 @@
+[gd_scene load_steps=10 format=3 uid="uid://dnks4hnqxbj6s"]
+
+[ext_resource type="Script" path="res://scenes/mainMenu/main.gd" id="1_2ilo5"]
+[ext_resource type="Theme" uid="uid://f6n2yykmqd16" path="res://assets/style/theme.tres" id="2_ujpk0"]
+[ext_resource type="Script" path="res://scenes/mainMenu/NavBar.gd" id="3_rha28"]
+[ext_resource type="Shader" path="res://scenes/mainMenu/shader.gdshader" id="4_an45y"]
+[ext_resource type="Script" path="res://scenes/mainMenu/NotificationPanel.gd" id="4_iyhic"]
+[ext_resource type="PackedScene" uid="uid://yr815312l8g0" path="res://scenes/elements/notification/NotificationItem.tscn" id="5_n4hrt"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_tbolm"]
+
+[sub_resource type="GDScript" id="GDScript_dyjcy"]
+script/source = "extends CanvasLayer
+
+
+# Called when the node enters the scene tree for the first time.
+func _ready() -> void:
+	# This fixes Popup elements not geting shaders
+	layer=1025
+"
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_fqfyy"]
+shader = ExtResource("4_an45y")
+shader_parameter/intensity = 0.2
+shader_parameter/pixel_width = 640.0
+shader_parameter/pixel_height = 480.0
+
+[node name="Control" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_2ilo5")
+
+[node name="BG" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.0784314, 0.0784314, 0.0784314, 1)
+
+[node name="NavBar" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_top = 0.829
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 0.0799866
+grow_horizontal = 2
+grow_vertical = 0
+theme = ExtResource("2_ujpk0")
+script = ExtResource("3_rha28")
+
+[node name="HBoxContainer" type="HBoxContainer" parent="NavBar"]
+layout_mode = 2
+alignment = 1
+
+[node name="HSplitContainer3" type="HSplitContainer" parent="NavBar/HBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 50
+theme_override_constants/minimum_grab_thickness = 50
+
+[node name="Overview" type="Button" parent="NavBar/HBoxContainer"]
+custom_minimum_size = Vector2(0, 60)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+theme_override_font_sizes/font_size = 28
+text = "Overview"
+
+[node name="Session" type="Button" parent="NavBar/HBoxContainer"]
+custom_minimum_size = Vector2(0, 60)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+theme_override_font_sizes/font_size = 28
+text = "Session"
+
+[node name="Program" type="Button" parent="NavBar/HBoxContainer"]
+custom_minimum_size = Vector2(0, 60)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+theme_override_font_sizes/font_size = 28
+text = "Program"
+
+[node name="Data" type="Button" parent="NavBar/HBoxContainer"]
+custom_minimum_size = Vector2(0, 60)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+theme_override_font_sizes/font_size = 28
+text = "Data"
+
+[node name="HSplitContainer" type="HSplitContainer" parent="NavBar/HBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 50
+theme_override_constants/minimum_grab_thickness = 50
+
+[node name="CatWidget" type="Panel" parent="NavBar/HBoxContainer"]
+custom_minimum_size = Vector2(82, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+theme = ExtResource("2_ujpk0")
+
+[node name="HSplitContainer2" type="HSplitContainer" parent="NavBar/HBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 50
+theme_override_constants/minimum_grab_thickness = 50
+
+[node name="UserSelect" type="Panel" parent="NavBar/HBoxContainer"]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+theme = ExtResource("2_ujpk0")
+theme_override_styles/panel = SubResource("StyleBoxEmpty_tbolm")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="NavBar/HBoxContainer/UserSelect"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.02
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = -2.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_ujpk0")
+alignment = 1
+
+[node name="UserLabel" type="Label" parent="NavBar/HBoxContainer/UserSelect/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 1
+theme_override_font_sizes/font_size = 23
+text = "Selected User"
+horizontal_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="NavBar/HBoxContainer/UserSelect/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 0
+
+[node name="UserButton" type="Button" parent="NavBar/HBoxContainer/UserSelect/VBoxContainer"]
+layout_mode = 2
+text = "None"
+
+[node name="Clock" type="Panel" parent="NavBar/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme = ExtResource("2_ujpk0")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="NavBar/HBoxContainer/Clock"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+alignment = 1
+
+[node name="Date" type="Label" parent="NavBar/HBoxContainer/Clock/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 1
+theme_override_font_sizes/font_size = 23
+text = "09/03/2026"
+horizontal_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="NavBar/HBoxContainer/Clock/VBoxContainer"]
+layout_mode = 2
+
+[node name="Time" type="Label" parent="NavBar/HBoxContainer/Clock/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 1
+text = "13:22"
+horizontal_alignment = 1
+
+[node name="CurrentSceneContent" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+anchor_bottom = 0.752
+offset_bottom = 37.04
+theme = ExtResource("2_ujpk0")
+
+[node name="PopupPanel" type="Panel" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.326
+anchor_top = 0.208
+anchor_right = 0.701
+anchor_bottom = 0.792
+offset_left = 0.199982
+offset_top = 0.159996
+offset_right = 0.199951
+offset_bottom = -0.160034
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_ujpk0")
+
+[node name="NotificationPanel" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.25
+anchor_top = 0.108
+anchor_right = 0.75
+anchor_bottom = 0.731
+offset_top = 0.16
+offset_right = -6.10352e-05
+offset_bottom = 0.119995
+grow_horizontal = 2
+mouse_filter = 2
+theme = ExtResource("2_ujpk0")
+theme_override_constants/separation = 5
+script = ExtResource("4_iyhic")
+notification_scene = ExtResource("5_n4hrt")
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+layer = 128
+script = SubResource("GDScript_dyjcy")
+
+[node name="PanelShader" type="ColorRect" parent="CanvasLayer"]
+material = SubResource("ShaderMaterial_fqfyy")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme = ExtResource("2_ujpk0")
+color = Color(0.0784314, 0.0784314, 0.0784314, 1)
+
+[connection signal="pressed" from="NavBar/HBoxContainer/Overview" to="NavBar" method="_on_overview_pressed"]
+[connection signal="pressed" from="NavBar/HBoxContainer/Session" to="NavBar" method="_on_session_pressed"]
+[connection signal="pressed" from="NavBar/HBoxContainer/Program" to="NavBar" method="_on_program_pressed"]
+[connection signal="pressed" from="NavBar/HBoxContainer/Data" to="NavBar" method="_on_data_pressed"]
+[connection signal="pressed" from="NavBar/HBoxContainer/UserSelect/VBoxContainer/UserButton" to="." method="_on_user_button_pressed"]

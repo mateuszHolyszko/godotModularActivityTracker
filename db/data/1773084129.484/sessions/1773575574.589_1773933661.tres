@@ -1,0 +1,84 @@
+[gd_resource type="Resource" script_class="HypertrophySessionResource" load_steps=14 format=3]
+
+[ext_resource type="Script" path="res://db/scripts/exercise/exercise_resource.gd" id="1_og6fj"]
+[ext_resource type="Script" path="res://db/scripts/hyperthropyProgram/program_exercise_entry.gd" id="2_c51l7"]
+[ext_resource type="Resource" path="res://db/data/1773084129.484/programs/1773575574.589.tres" id="3_pgkfb"]
+[ext_resource type="Script" path="res://db/scripts/hypertrophySession/hypertrophy_session_resource.gd" id="4_yards"]
+[ext_resource type="Script" path="res://db/scripts/hypertrophySession/exercise_set_resource.gd" id="5_ooc70"]
+
+[sub_resource type="Resource" id="Resource_pe7o6"]
+script = ExtResource("1_og6fj")
+id = "1773453398.707"
+name = "ROMANIAN DEADLIFT"
+target_muscle = "Hamstrings"
+bodyweight = false
+isolation = true
+tension_profile = 1
+intensity = 2
+rep_range = Vector2i(6, 10)
+
+[sub_resource type="Resource" id="Resource_p8nm2"]
+script = ExtResource("2_c51l7")
+order = 0
+exercise_type = 0
+exercise = SubResource("Resource_pe7o6")
+
+[sub_resource type="Resource" id="Resource_lmtrr"]
+script = ExtResource("1_og6fj")
+id = "1773522259.245"
+name = "PULLDOWN"
+target_muscle = "Back"
+bodyweight = false
+isolation = true
+tension_profile = 0
+intensity = 1
+rep_range = Vector2i(6, 10)
+
+[sub_resource type="Resource" id="Resource_v487m"]
+script = ExtResource("2_c51l7")
+order = 1
+exercise_type = 2
+exercise = SubResource("Resource_lmtrr")
+
+[sub_resource type="Resource" id="Resource_gxa24"]
+script = ExtResource("1_og6fj")
+id = "1773517273.283"
+name = "BENCH PRESS"
+target_muscle = "Chest"
+bodyweight = false
+isolation = true
+tension_profile = 0
+intensity = 1
+rep_range = Vector2i(3, 7)
+
+[sub_resource type="Resource" id="Resource_ajeb0"]
+script = ExtResource("2_c51l7")
+order = 2
+exercise_type = 1
+exercise = SubResource("Resource_gxa24")
+
+[sub_resource type="Resource" id="Resource_qd72k"]
+script = ExtResource("5_ooc70")
+session = null
+exercise = SubResource("Resource_pe7o6")
+set_number = 2
+weight = 0.0
+reps = 0
+timestamp = 1773933679
+
+[sub_resource type="Resource" id="Resource_qdn80"]
+script = ExtResource("5_ooc70")
+session = null
+exercise = SubResource("Resource_pe7o6")
+set_number = 3
+weight = 0.0
+reps = 0
+timestamp = 1773933694
+
+[resource]
+script = ExtResource("4_yards")
+program = ExtResource("3_pgkfb")
+timestamp_start = 1773933661
+timestamp_end = 0
+entries = Array[ExtResource("2_c51l7")]([SubResource("Resource_p8nm2"), SubResource("Resource_v487m"), SubResource("Resource_ajeb0")])
+sets = Array[ExtResource("5_ooc70")]([SubResource("Resource_qd72k"), SubResource("Resource_qdn80")])

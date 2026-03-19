@@ -1,0 +1,433 @@
+[gd_scene load_steps=6 format=3 uid="uid://cpfkskcy275d6"]
+
+[ext_resource type="Script" path="res://scenes/elements/ChooseExercise/chooseExercise.gd" id="1_7iis1"]
+[ext_resource type="Theme" uid="uid://f6n2yykmqd16" path="res://assets/style/theme.tres" id="1_naq6i"]
+
+[sub_resource type="GDScript" id="GDScript_7la1g"]
+script/source = "extends Panel
+
+signal exercise_chosen(exercise_entry: ProgramExerciseEntry)
+signal back_pressed()
+
+@onready var MainControl = $\"../../..\" # Holds - var selected_target: String = \"\"
+@onready var ExercisesContainer = $VC/ExercisesContainer 
+@onready var BackButton = $VC/BackButton
+
+var selected_target: String = \"\"
+var all_exercises: Array[ExerciseResource] = []
+var exercise_buttons: Array[Button] = []
+
+# Called when the node enters the scene tree for the first time.
+func _ready():
+	# Store all exercises for filtering
+	all_exercises = DataManager.exercises.duplicate()
+	
+	# Connect the back button
+	BackButton.pressed.connect(_on_back_pressed)
+	
+	# Initially hidden until target is selected
+	hide()
+
+
+func set_target_filter(target: String) -> void:
+	selected_target = target
+	populate_exercise_list()
+
+
+func populate_exercise_list() -> void:
+	# Clear existing buttons
+	exercise_buttons.clear()
+	for child in ExercisesContainer.get_children():
+		child.queue_free()
+	
+	# Get filtered exercises based on target muscle
+	var filtered_exercises = DataManager.get_exercises_filtered(selected_target)
+	
+	for exercise in filtered_exercises:
+		# Create button for this exercise
+		var exercise_btn := Button.new()
+		exercise_btn.text = exercise.name
+		exercise_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		exercise_btn.toggle_mode = false  # Regular button, not toggle
+		
+		# Get the base muscle color
+		var base_color = MuscleData.get_color(selected_target)
+		
+		# Generate a slight variation for this specific exercise
+		var varied_color = _vary_color(base_color, 0.1)  # 10% variation max
+		
+		# Style the button with the varied color
+		_style_button(exercise_btn, varied_color)
+		
+		# Store the exercise resource in metadata
+		exercise_btn.set_meta(\"exercise_resource\", exercise)
+		
+		# Connect button press
+		exercise_btn.pressed.connect(_on_exercise_button_pressed.bind(exercise_btn))
+		
+		# Add to container
+		ExercisesContainer.add_child(exercise_btn)
+		exercise_buttons.append(exercise_btn)
+	
+	# Focus the first button if any exist
+	if exercise_buttons.size() > 0:
+		exercise_buttons[0].grab_focus()
+
+
+func _style_button(button: Button, base_color: Color) -> void:
+	# Style for normal state
+	var normal_style = button.get_theme_stylebox(\"normal\").duplicate()
+	normal_style.bg_color = base_color
+	button.add_theme_stylebox_override(\"normal\", normal_style)
+	
+	# Set font color to black for all states
+	button.add_theme_color_override(\"font_color\", Color.BLACK)
+	
+
+
+func _vary_color(color: Color, variation_amount: float = 0.2) -> Color:
+	# Randomly vary RGB values within the variation amount
+	var r = clamp(color.r + randf_range(-variation_amount, variation_amount), 0.0, 1.0)
+	var g = clamp(color.g + randf_range(-variation_amount, variation_amount), 0.0, 1.0)
+	var b = clamp(color.b + randf_range(-variation_amount, variation_amount), 0.0, 1.0)
+	
+	return Color(r, g, b, color.a)
+
+
+func _on_exercise_button_pressed(button: Button) -> void:
+	var selected_exercise: ExerciseResource = button.get_meta(\"exercise_resource\")
+	
+	# Create a new ProgramExerciseEntry
+	var exercise_entry = ProgramExerciseEntry.new()
+	exercise_entry.exercise = selected_exercise
+	# You might want to set default values for other fields
+	exercise_entry.order = 0  # This should be set by the parent based on current count
+	exercise_entry.exercise_type = ProgramExerciseEntry.ExerciseType.STRAIGHT_SET  # Default
+	
+	exercise_chosen.emit(exercise_entry)
+	
+	# Optionally hide the panel after selection
+	hide()
+
+
+func _on_back_pressed() -> void:
+	# Emit signal to tell parent to go back to target selection
+	back_pressed.emit()
+	hide()
+
+
+# Called every frame. 'delta' is the elapsed time since the previous frame.
+func _process(delta):
+	pass
+"
+
+[sub_resource type="GDScript" id="GDScript_mf1h5"]
+script/source = "extends Panel
+
+signal target_chosen(target: String)
+
+@onready var buttonsPanelTorso = $VC/HC/Torso/VC/ButtonsPanel/VC
+@onready var buttonsPanelArms = $VC/HC/Arms/VC/ButtonsPanel/VC
+@onready var buttonsPanelLegs = $VC/HC/Legs/VC/ButtonsPanel/VC
+
+@onready var cancelButton = $VC/CancelButton
+
+# Called when the node enters the scene tree for the first time.
+func _ready():
+	_color_buttons()
+	_connect_buttons()
+	buttonsPanelTorso.get_child(0,true).grab_focus()
+
+
+func _connect_buttons() -> void:
+	_connect_panel_buttons(buttonsPanelTorso)
+	_connect_panel_buttons(buttonsPanelArms)
+	_connect_panel_buttons(buttonsPanelLegs)
+
+
+func _connect_panel_buttons(panel) -> void:
+	for button in panel.get_children():
+		if button is Button:
+			button.pressed.connect(_on_muscle_button_pressed.bind(button))
+
+
+func _on_muscle_button_pressed(button: Button) -> void:
+	target_chosen.emit(button.text)
+
+
+func _color_buttons() -> void:
+	# Color buttons in each panel
+	_color_panel_buttons(buttonsPanelTorso)
+	_color_panel_buttons(buttonsPanelArms)
+	_color_panel_buttons(buttonsPanelLegs)
+
+
+func _color_panel_buttons(panel) -> void:
+	for button in panel.get_children():
+		if button is Button:
+			var muscle_name = button.text
+			var muscle_color = MuscleData.get_color(muscle_name)
+			
+			# Set the button's background color
+			var stylebox = button.get_theme_stylebox(\"normal\").duplicate()
+			stylebox.bg_color = muscle_color
+			button.add_theme_stylebox_override(\"normal\", stylebox)
+			
+			# Optionally set a darker color for hover state
+			var hover_stylebox = button.get_theme_stylebox(\"hover\").duplicate()
+			hover_stylebox.bg_color = muscle_color.darkened(0.2)
+			button.add_theme_stylebox_override(\"hover\", hover_stylebox)
+			
+			# Optionally set an even darker color for pressed state
+			var pressed_stylebox = button.get_theme_stylebox(\"pressed\").duplicate()
+			pressed_stylebox.bg_color = muscle_color.darkened(0.3)
+			button.add_theme_stylebox_override(\"pressed\", pressed_stylebox)
+			
+			# Optionally set color for disabled state if needed
+			var disabled_stylebox = button.get_theme_stylebox(\"disabled\").duplicate()
+			disabled_stylebox.bg_color = muscle_color.darkened(0.5)
+			button.add_theme_stylebox_override(\"disabled\", disabled_stylebox)
+
+
+# Called every frame. 'delta' is the elapsed time since the previous frame.
+func _process(delta):
+	pass
+"
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_aqv0e"]
+
+[node name="ChooseExercise" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_7iis1")
+
+[node name="Panel" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("1_naq6i")
+
+[node name="MC" type="MarginContainer" parent="Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="GetExercisePanel" type="Panel" parent="Panel/MC"]
+visible = false
+layout_mode = 2
+script = SubResource("GDScript_7la1g")
+
+[node name="VC" type="VBoxContainer" parent="Panel/MC/GetExercisePanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ExercisesContainer" type="VBoxContainer" parent="Panel/MC/GetExercisePanel/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+theme = ExtResource("1_naq6i")
+theme_override_constants/separation = 10
+
+[node name="BackButton" type="Button" parent="Panel/MC/GetExercisePanel/VC"]
+layout_mode = 2
+text = "Back"
+
+[node name="GetTargetPanel" type="Panel" parent="Panel/MC"]
+layout_mode = 2
+script = SubResource("GDScript_mf1h5")
+
+[node name="VC" type="VBoxContainer" parent="Panel/MC/GetTargetPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="HC" type="HBoxContainer" parent="Panel/MC/GetTargetPanel/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Torso" type="Panel" parent="Panel/MC/GetTargetPanel/VC/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VC" type="VBoxContainer" parent="Panel/MC/GetTargetPanel/VC/HC/Torso"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Label" type="Label" parent="Panel/MC/GetTargetPanel/VC/HC/Torso/VC"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 34
+text = "Torso"
+horizontal_alignment = 1
+
+[node name="ButtonsPanel" type="Panel" parent="Panel/MC/GetTargetPanel/VC/HC/Torso/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="VC" type="VBoxContainer" parent="Panel/MC/GetTargetPanel/VC/HC/Torso/VC/ButtonsPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Chest" type="Button" parent="Panel/MC/GetTargetPanel/VC/HC/Torso/VC/ButtonsPanel/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+text = "Chest"
+
+[node name="Back" type="Button" parent="Panel/MC/GetTargetPanel/VC/HC/Torso/VC/ButtonsPanel/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+text = "Back"
+
+[node name="Abs" type="Button" parent="Panel/MC/GetTargetPanel/VC/HC/Torso/VC/ButtonsPanel/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+text = "Abs"
+
+[node name="Arms" type="Panel" parent="Panel/MC/GetTargetPanel/VC/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VC" type="VBoxContainer" parent="Panel/MC/GetTargetPanel/VC/HC/Arms"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Label" type="Label" parent="Panel/MC/GetTargetPanel/VC/HC/Arms/VC"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 34
+text = "Arms"
+horizontal_alignment = 1
+
+[node name="ButtonsPanel" type="Panel" parent="Panel/MC/GetTargetPanel/VC/HC/Arms/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="VC" type="VBoxContainer" parent="Panel/MC/GetTargetPanel/VC/HC/Arms/VC/ButtonsPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Shoulders" type="Button" parent="Panel/MC/GetTargetPanel/VC/HC/Arms/VC/ButtonsPanel/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+text = "Shoulders"
+
+[node name="Triceps" type="Button" parent="Panel/MC/GetTargetPanel/VC/HC/Arms/VC/ButtonsPanel/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+text = "Triceps"
+
+[node name="Biceps" type="Button" parent="Panel/MC/GetTargetPanel/VC/HC/Arms/VC/ButtonsPanel/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+text = "Biceps"
+
+[node name="Forearms" type="Button" parent="Panel/MC/GetTargetPanel/VC/HC/Arms/VC/ButtonsPanel/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+text = "Forearms"
+
+[node name="Legs" type="Panel" parent="Panel/MC/GetTargetPanel/VC/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VC" type="VBoxContainer" parent="Panel/MC/GetTargetPanel/VC/HC/Legs"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Label" type="Label" parent="Panel/MC/GetTargetPanel/VC/HC/Legs/VC"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 34
+text = "Legs"
+horizontal_alignment = 1
+
+[node name="ButtonsPanel" type="Panel" parent="Panel/MC/GetTargetPanel/VC/HC/Legs/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="VC" type="VBoxContainer" parent="Panel/MC/GetTargetPanel/VC/HC/Legs/VC/ButtonsPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Glutes" type="Button" parent="Panel/MC/GetTargetPanel/VC/HC/Legs/VC/ButtonsPanel/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+text = "Glutes"
+
+[node name="Quads" type="Button" parent="Panel/MC/GetTargetPanel/VC/HC/Legs/VC/ButtonsPanel/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+text = "Quads"
+
+[node name="Hamstrings" type="Button" parent="Panel/MC/GetTargetPanel/VC/HC/Legs/VC/ButtonsPanel/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+text = "Hamstrings"
+
+[node name="Calves" type="Button" parent="Panel/MC/GetTargetPanel/VC/HC/Legs/VC/ButtonsPanel/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+text = "Calves"
+
+[node name="VSeparator" type="VSeparator" parent="Panel/MC/GetTargetPanel/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_stretch_ratio = 0.5
+theme_override_styles/separator = SubResource("StyleBoxEmpty_aqv0e")
+
+[node name="CancelButton" type="Button" parent="Panel/MC/GetTargetPanel/VC"]
+layout_mode = 2
+size_flags_vertical = 8
+text = "Cancel"

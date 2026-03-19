@@ -1,0 +1,144 @@
+[gd_scene load_steps=4 format=3 uid="uid://dxeq81ut0lccp"]
+
+[ext_resource type="Theme" uid="uid://f6n2yykmqd16" path="res://assets/style/theme.tres" id="1_iwjkd"]
+[ext_resource type="Script" path="res://scenes/SessionMenu/State1_panelPickProgram.gd" id="2_bnd5e"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_ihwd6"]
+
+[node name="State1PanelPickProgram" type="Panel"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("1_iwjkd")
+script = ExtResource("2_bnd5e")
+
+[node name="MC" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="HC" type="HBoxContainer" parent="MC"]
+layout_mode = 2
+
+[node name="LastSessionsSummary" type="Panel" parent="MC/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.8
+theme_override_styles/panel = SubResource("StyleBoxEmpty_ihwd6")
+
+[node name="VC" type="VBoxContainer" parent="MC/HC/LastSessionsSummary"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="TargetVolumePanel" type="Panel" parent="MC/HC/LastSessionsSummary/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="noData" type="Panel" parent="MC/HC/LastSessionsSummary/VC/TargetVolumePanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Label" type="Label" parent="MC/HC/LastSessionsSummary/VC/TargetVolumePanel/noData"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "No Data"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="SessionHistoryPanel" type="Panel" parent="MC/HC/LastSessionsSummary/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="noData" type="Panel" parent="MC/HC/LastSessionsSummary/VC/SessionHistoryPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Label" type="Label" parent="MC/HC/LastSessionsSummary/VC/SessionHistoryPanel/noData"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "No Data"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="VC" type="VBoxContainer" parent="MC/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Panel" type="Panel" parent="MC/HC/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_stretch_ratio = 0.25
+
+[node name="Prompt" type="Label" parent="MC/HC/VC/Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 40
+text = "Chose program to run:"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="PanelProgramList" type="Panel" parent="MC/HC/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ProgramListContainer" type="VBoxContainer" parent="MC/HC/VC/PanelProgramList"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 20
+alignment = 1
+
+[node name="noData" type="Panel" parent="MC/HC/VC/PanelProgramList"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Label" type="Label" parent="MC/HC/VC/PanelProgramList/noData"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "No user selected"
+horizontal_alignment = 1
+vertical_alignment = 1

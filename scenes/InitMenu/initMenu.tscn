@@ -1,0 +1,170 @@
+[gd_scene load_steps=5 format=3 uid="uid://cqacmk0oq4gow"]
+
+[ext_resource type="Theme" uid="uid://f6n2yykmqd16" path="res://assets/style/theme.tres" id="1_1rn05"]
+[ext_resource type="ArrayMesh" uid="uid://bgavug0bmjgig" path="res://assets/models/Body35.obj" id="2_ge5eg"]
+[ext_resource type="Texture2D" uid="uid://ca382g8x3661c" path="res://assets/images/logo.png" id="3_f0pf0"]
+
+[sub_resource type="GDScript" id="GDScript_xfebl"]
+script/source = "extends MeshInstance3D
+
+var base_speed = 0.5
+var speed_multiplier = 5.0
+var transition_zone = 10.0 # Degrees for smooth transition
+
+# Called every frame. 'delta' is the elapsed time since the previous frame.
+func _process(delta):
+	# Get current rotation in degrees (convert from radians)
+	var current_rotation_deg = rad_to_deg(rotation.y)
+	
+	# Normalize angle to -180 to 180 range
+	current_rotation_deg = fmod(current_rotation_deg, 360)
+	if current_rotation_deg > 180:
+		current_rotation_deg -= 360
+	elif current_rotation_deg < -180:
+		current_rotation_deg += 360
+	
+	# Calculate angle distance from front (0 degrees)
+	var angle_from_front = abs(current_rotation_deg)
+	
+	# Determine speed multiplier based on angle
+	if angle_from_front <= 45:
+		# Front zone - normal speed
+		var current_multiplier = 1.0
+		rotation.y += delta * base_speed * current_multiplier
+	else:
+		# Outside front - double speed
+		rotation.y += delta * base_speed * speed_multiplier
+	
+	# Optional: Print current angle for debugging
+	# print(\"Angle: \", current_rotation_deg, \" Speed multiplier: \", current_multiplier)
+"
+
+[node name="InitMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="CurrentSceneContent" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("1_1rn05")
+
+[node name="HBoxContainer" type="HBoxContainer" parent="CurrentSceneContent"]
+clip_contents = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+alignment = 1
+
+[node name="ViewportPanel" type="AspectRatioContainer" parent="CurrentSceneContent/HBoxContainer"]
+clip_contents = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme = ExtResource("1_1rn05")
+stretch_mode = 1
+
+[node name="SubViewportContainer" type="SubViewportContainer" parent="CurrentSceneContent/HBoxContainer/ViewportPanel"]
+layout_mode = 2
+stretch = true
+
+[node name="SubViewport" type="SubViewport" parent="CurrentSceneContent/HBoxContainer/ViewportPanel/SubViewportContainer"]
+transparent_bg = true
+handle_input_locally = false
+size = Vector2i(2, 2)
+render_target_update_mode = 4
+
+[node name="Node3D" type="Node3D" parent="CurrentSceneContent/HBoxContainer/ViewportPanel/SubViewportContainer/SubViewport"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.923626, 0, 0)
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="CurrentSceneContent/HBoxContainer/ViewportPanel/SubViewportContainer/SubViewport"]
+transform = Transform3D(0.971508, 0, 0.237007, 0, 1, 0, -0.237007, 0, 0.971508, -46.4063, -26.1128, 58.7379)
+sky_mode = 1
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="CurrentSceneContent/HBoxContainer/ViewportPanel/SubViewportContainer/SubViewport"]
+transform = Transform3D(0.799408, 0, 0, 0, 0.799408, 0, 0, 0, 0.799408, 0.454428, -34.6543, 4.35349)
+mesh = ExtResource("2_ge5eg")
+script = SubResource("GDScript_xfebl")
+
+[node name="Camera3D" type="Camera3D" parent="CurrentSceneContent/HBoxContainer/ViewportPanel/SubViewportContainer/SubViewport"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.85745, -3.87495, 76.5099)
+projection = 1
+size = 100.0
+
+[node name="InfoPanel" type="Panel" parent="CurrentSceneContent/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.78
+theme = ExtResource("1_1rn05")
+
+[node name="MarginContainer" type="MarginContainer" parent="CurrentSceneContent/HBoxContainer/InfoPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("1_1rn05")
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CurrentSceneContent/HBoxContainer/InfoPanel/MarginContainer"]
+layout_mode = 2
+
+[node name="Panel" type="Panel" parent="CurrentSceneContent/HBoxContainer/InfoPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+theme = ExtResource("1_1rn05")
+
+[node name="MarginContainer" type="MarginContainer" parent="CurrentSceneContent/HBoxContainer/InfoPanel/MarginContainer/VBoxContainer/Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="HC" type="HBoxContainer" parent="CurrentSceneContent/HBoxContainer/InfoPanel/MarginContainer/VBoxContainer/Panel/MarginContainer"]
+layout_mode = 2
+
+[node name="AspectRatioContainer" type="AspectRatioContainer" parent="CurrentSceneContent/HBoxContainer/InfoPanel/MarginContainer/VBoxContainer/Panel/MarginContainer/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+stretch_mode = 1
+
+[node name="TextLogo" type="TextureRect" parent="CurrentSceneContent/HBoxContainer/InfoPanel/MarginContainer/VBoxContainer/Panel/MarginContainer/HC/AspectRatioContainer"]
+layout_mode = 2
+texture = ExtResource("3_f0pf0")
+expand_mode = 2
+
+[node name="Label" type="Label" parent="CurrentSceneContent/HBoxContainer/InfoPanel/MarginContainer/VBoxContainer/Panel/MarginContainer/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 1
+theme_override_constants/line_spacing = 20
+theme_override_font_sizes/font_size = 22
+text = "Version-InDev2
+Engine-Godot4.2.2
+Author-Mat"
+vertical_alignment = 1
+
+[node name="GibberishGenPanel" type="Panel" parent="CurrentSceneContent/HBoxContainer/InfoPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_stretch_ratio = 1.5
+theme = ExtResource("1_1rn05")

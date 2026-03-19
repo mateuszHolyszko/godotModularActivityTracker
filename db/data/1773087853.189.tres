@@ -1,0 +1,46 @@
+[gd_resource type="Resource" script_class="UserResource" load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://db/scripts/user_resource.gd" id="1_isg8w"]
+[ext_resource type="Script" path="res://db/scripts/measurement_resource.gd" id="1_jw6fk"]
+
+[sub_resource type="Resource" id="Resource_0m3mo"]
+script = ExtResource("1_jw6fk")
+timestamp = 1773087853
+arms = 38.0
+chest = 105.0
+waist = 84.0
+thigh = 60.0
+weight = 75.0
+
+[sub_resource type="Resource" id="Resource_yhhkf"]
+script = ExtResource("1_jw6fk")
+timestamp = 1773087853
+arms = 39.0
+chest = 106.0
+waist = 83.0
+thigh = 61.0
+weight = 78.0
+
+[sub_resource type="Resource" id="Resource_a0wdp"]
+script = ExtResource("1_jw6fk")
+timestamp = 1773417967
+arms = 35.0
+chest = 102.5
+waist = 81.0
+thigh = 60.0
+weight = 72.25
+
+[sub_resource type="Resource" id="Resource_76nej"]
+script = ExtResource("1_jw6fk")
+timestamp = 1773424189
+arms = 35.5
+chest = 103.0
+waist = 81.25
+thigh = 59.5
+weight = 72.0
+
+[resource]
+script = ExtResource("1_isg8w")
+id = "1773087853.189"
+name = "Test"
+measurements = Array[ExtResource("1_jw6fk")]([SubResource("Resource_0m3mo"), SubResource("Resource_yhhkf"), SubResource("Resource_a0wdp"), SubResource("Resource_76nej")])
