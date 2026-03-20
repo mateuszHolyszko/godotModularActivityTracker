@@ -1,0 +1,54 @@
+[gd_resource type="Resource" script_class="HypertrophySessionResource" load_steps=9 format=3]
+
+[ext_resource type="Resource" path="res://db/data/1773084129.484/programs/1773575574.589.tres" id="1_wi3ws"]
+[ext_resource type="Script" path="res://db/scripts/hypertrophySession/hypertrophy_session_resource.gd" id="2_v0miv"]
+[ext_resource type="Script" path="res://db/scripts/exercise/exercise_resource.gd" id="3_qau34"]
+[ext_resource type="Script" path="res://db/scripts/hypertrophySession/exercise_set_resource.gd" id="4_3qkf3"]
+
+[sub_resource type="Resource" id="Resource_gxa24"]
+script = ExtResource("3_qau34")
+id = "1773517273.283"
+name = "BENCH PRESS"
+target_muscle = "Chest"
+bodyweight = false
+isolation = true
+tension_profile = 0
+intensity = 1
+rep_range = Vector2i(3, 7)
+
+[sub_resource type="Resource" id="Resource_ui1jl"]
+script = ExtResource("4_3qkf3")
+session = null
+exercise = SubResource("Resource_gxa24")
+set_number = 2
+weight = 5.6
+reps = 6
+timestamp = 1774026389
+
+[sub_resource type="Resource" id="Resource_lmtrr"]
+script = ExtResource("3_qau34")
+id = "1773522259.245"
+name = "PULLDOWN"
+target_muscle = "Back"
+bodyweight = false
+isolation = true
+tension_profile = 0
+intensity = 1
+rep_range = Vector2i(6, 10)
+
+[sub_resource type="Resource" id="Resource_nfa13"]
+script = ExtResource("4_3qkf3")
+session = null
+exercise = SubResource("Resource_lmtrr")
+set_number = 3
+weight = 5.0
+reps = 4
+timestamp = 1774026440
+
+[resource]
+script = ExtResource("2_v0miv")
+program = ExtResource("1_wi3ws")
+timestamp_start = 1774026350
+timestamp_end = 1774026452
+entries = Array[Resource("res://db/scripts/hyperthropyProgram/program_exercise_entry.gd")]([])
+sets = Array[ExtResource("4_3qkf3")]([SubResource("Resource_ui1jl"), SubResource("Resource_nfa13")])

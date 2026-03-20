@@ -79,7 +79,7 @@ func save_session(session: HypertrophySessionResource) -> void:
 	var dir_path = _get_session_dir(session.program.user)
 	DirAccess.make_dir_recursive_absolute(dir_path)
 	var path = dir_path + session.program.id + "_" + str(session.timestamp_start) + ".tres"
-	ResourceSaver.save(session, path, ResourceSaver.FLAG_BUNDLE_RESOURCES)
+	ResourceSaver.save(session, path, ResourceSaver.FLAG_REPLACE_SUBRESOURCE_PATHS)
 
 
 # ---------------------------------------------------------------------------
@@ -154,7 +154,7 @@ func swap_exercise_in_active_session(order_index: int, new_exercise: ExerciseRes
 ## Returns the created ExerciseSetResource.
 func log_set(exercise: ExerciseResource, weight: float, reps: int, set_number: int = -1) -> ExerciseSetResource:
 	assert(active_session != null, "SessionManager: no active session to log a set into.")
- 
+
 	var s := ExerciseSetResource.new()
 	s.session    = active_session
 	s.exercise   = exercise
@@ -162,7 +162,7 @@ func log_set(exercise: ExerciseResource, weight: float, reps: int, set_number: i
 	s.weight     = weight
 	s.reps       = reps
 	s.timestamp  = Time.get_unix_time_from_system()
- 
+
 	active_session.sets.append(s)
 	save_session(active_session)
 	return s
@@ -228,36 +228,50 @@ func get_sessions_in_range(from_ts: int, to_ts: int) -> Array[HypertrophySession
 	return sessions.filter(func(s): return s.timestamp_start >= from_ts and s.timestamp_start <= to_ts)
 
 
-## Returns the sets from the most recent workout where the given exercise was logged.
-## Scans all sets across all sessions directly (no per-session crawl needed thanks
-## to the per-set timestamp). Returns an empty array if the exercise has never been logged.
+## Returns the sets from the most recent session where the given exercise was logged.
+## Matches exercises by id — not by identity — because exercises embedded in saved
+## sessions are deserialized as new objects and will never pass an identity (==) check
+## against the live program references.
 func find_most_recent_sets(exercise: ExerciseResource) -> Array[ExerciseSetResource]:
-	# Collect every set ever logged for this exercise.
+	print("SessionManager.find_most_recent_sets: looking for exercise id=", exercise.id, " name=", exercise.name)
+	print("SessionManager.find_most_recent_sets: scanning ", sessions.size(), " sessions")
+
 	var all_sets: Array[ExerciseSetResource] = []
 	for session in sessions:
 		for s in session.sets:
-			if s.exercise == exercise:
+			if s.exercise != null and s.exercise.id == exercise.id:
 				all_sets.append(s)
+			elif s.exercise == null:
+				print("SessionManager.find_most_recent_sets: WARNING — set with null exercise found in session ts=", session.timestamp_start)
+
+	print("SessionManager.find_most_recent_sets: found ", all_sets.size(), " total sets across all sessions")
 
 	if all_sets.is_empty():
+		print("SessionManager.find_most_recent_sets: no history found, returning empty")
 		return []
 
-	# Find the timestamp of the most recent set for this exercise.
-	var latest_ts: int = all_sets[0].timestamp
-	for s in all_sets:
-		if s.timestamp > latest_ts:
-			latest_ts = s.timestamp
-
-	# Keep only sets that share the same session as that latest set.
-	# Using session identity rather than timestamp equality avoids falsely grouping
-	# sets logged in different sessions that happen to share a close timestamp.
+	var latest_ts: int = 0
 	var latest_session: HypertrophySessionResource = null
 	for s in all_sets:
-		if s.timestamp == latest_ts:
+		if s.session != null and s.session.timestamp_start > latest_ts:
+			latest_ts = s.session.timestamp_start
 			latest_session = s.session
-			break
+		elif s.session == null:
+			print("SessionManager.find_most_recent_sets: WARNING — set has null session back-reference, set_number=", s.set_number, " weight=", s.weight, " reps=", s.reps)
 
-	var result: Array[ExerciseSetResource] = all_sets.filter(
-		func(s): return s.session == latest_session)
+	var result: Array[ExerciseSetResource]
+	if latest_session != null:
+		print("SessionManager.find_most_recent_sets: latest session found at timestamp_start=", latest_session.timestamp_start)
+		result = all_sets.filter(func(s): return s.session == latest_session)
+	else:
+		print("SessionManager.find_most_recent_sets: no valid session back-references — falling back to set.timestamp grouping")
+		var fallback_ts: int = 0
+		for s in all_sets:
+			if s.timestamp > fallback_ts:
+				fallback_ts = s.timestamp
+		print("SessionManager.find_most_recent_sets: fallback latest set timestamp=", fallback_ts)
+		result = all_sets.filter(func(s): return s.timestamp == fallback_ts)
+
 	result.sort_custom(func(a, b): return a.set_number < b.set_number)
+	print("SessionManager.find_most_recent_sets: returning ", result.size(), " sets — ", result.map(func(s): return "set#" + str(s.set_number) + " w=" + str(s.weight) + " r=" + str(s.reps)))
 	return result

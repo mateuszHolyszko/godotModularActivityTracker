@@ -20,6 +20,7 @@ var previous_set: ExerciseSetResource
 # --------------------
 # UI NODES
 # --------------------
+@onready var set_root 			   = $\".\"
 @onready var previous_weight_label = $Panel/HC/MainPanel/VC/WeightPanel/HC/PreviousWeightPanel/VC/PreviousWeightLabel
 @onready var previous_reps_label   = $Panel/HC/MainPanel/VC/RepsPanel/HC/PreviousRepsPanel/VC/PreviousRepsLabel
 @onready var value_input_weight    = $Panel/HC/MainPanel/VC/WeightPanel/HC/InputWeightPanel/ValueInputWeight
@@ -86,7 +87,7 @@ func _initialize_ui() -> void:
 
 	# emit signal for any parent needing UI-ready notification
 	data_loaded.emit()
-	print(\"RowSet: UI initialized for set\", set_data.set_number)
+	#print(\"RowSet: UI initialized for set\", set_data.set_number)
 
 
 func _load_previous_set() -> void:
@@ -104,6 +105,9 @@ func _load_previous_set() -> void:
 	else:
 		previous_weight_label.text = \"-\"
 		previous_reps_label.text   = \"-\"
+		
+	# Make set semi transparent to indicate it has not been edited yet
+	set_root.modulate.a = 0.7  # Semi-transparent
 
 
 func _apply_current_values() -> void:
@@ -118,6 +122,7 @@ func _on_set_changed(idx, _a = null) -> void:
 	if idx != exercise_idx:
 		return
 	_refresh_add_button_visibility()
+	
 
 
 func _on_set_edited(idx, set_number, updated_set) -> void:
@@ -127,6 +132,7 @@ func _on_set_edited(idx, set_number, updated_set) -> void:
 		return
 	set_data = updated_set
 	_apply_current_values()
+	
 
 
 # ========================
@@ -172,6 +178,16 @@ func update_data(new_set: ExerciseSetResource) -> void:
 	if _ui_initialized:
 		_apply_current_values()
 		_refresh_add_button_visibility()
+		
+		# Return to fully opaque to indicate the set has been edited
+		set_root.modulate.a = 1  # fully opaque
+		
+		# set_data.timestamp == 0 means that the value is from set history, not inputed in this session
+		# Check if timestamp is 0 -> modulate transparency
+		#if set_data.timestamp == 0:
+		#	set_root.modulate.a = 0.7  # Semi-transparent
+		#else:
+		#	set_root.modulate.a = 1.0  # Fully opaque
 "
 
 [sub_resource type="GDScript" id="GDScript_vch07"]
@@ -202,7 +218,7 @@ func _try_connect_signal():
 		print(\"data_loaded signal not found on root\")
 
 func _on_data_loaded():
-	print(\"data_loaded signal received, applying styles\")
+	#print(\"data_loaded signal received, applying styles\")
 	
 	# Double-check that all nodes are valid
 	if root == null or root.set_data == null or root.set_data.exercise == null:

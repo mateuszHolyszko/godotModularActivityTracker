@@ -27,6 +27,8 @@ func initialize(program: HypertrophyProgramResource) -> void:
 	print(\"SessionView: initialize with program\", program)
 
 	active_program = program
+	# Make sure sessions are loaded
+	SessionManager.load_sessions( DataManager.current_user )
 	sessionModel = SessionModel.new(active_program)
 
 	_connect_model_signals()
@@ -149,7 +151,7 @@ func _on_session_started(session: SessionModel):
 	update_labels()
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
-func _process(delta):
+func _process(_delta):
 	# Update elapsed time more frequently when session is active
 	if session_model and session_model.start_time > 0 and session_model.end_time == 0:
 		update_elapsed_time()
