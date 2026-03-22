@@ -211,7 +211,29 @@ func remove_set(exercise: ExerciseResource, set_number: int) -> bool:
 
 ## Returns all finished sessions that were built from the given program.
 func get_sessions_for_program(program: HypertrophyProgramResource) -> Array[HypertrophySessionResource]:
-	return sessions.filter(func(s): return s.program == program and not s.is_active())
+	print("\n=== get_sessions_for_program ===")
+	print("Program: ", program.resource_path.get_file() if program.resource_path else "Unnamed program")
+	print("Total sessions in storage: ", sessions.size())
+	
+	var filtered = sessions.filter(func(s): 
+		var matches = s.program == program and not s.is_active()
+		print("  Session: ", s.resource_path.get_file() if s.resource_path else "unsaved", 
+			  " | Program matches: ", s.program == program,
+			  " | is_active: ", s.is_active(),
+			  " | Included: ", matches)
+		return matches
+	)
+	
+	print("\nFiltered results: ", filtered.size(), " sessions found")
+	for i in range(filtered.size()):
+		var session = filtered[i]
+		print("  [", i, "] Session: ", session.resource_path.get_file() if session.resource_path else "unsaved",
+			  " | Timestamp: ", session.timestamp_start,
+			  " | Sets: ", session.sets.size())
+	
+	print("================================\n")
+	
+	return filtered
 
 
 ## Returns the most recent finished session for a program, or null.
@@ -223,9 +245,74 @@ func get_last_session_for_program(program: HypertrophyProgramResource) -> Hypert
 	return filtered[0]
 
 
+## Returns the average duration (in seconds) of the last N finished sessions for a program
+## (N capped at 10). Returns -1 if no finished sessions are found.
+func get_average_session_duration(program: HypertrophyProgramResource) -> int:
+	print("\n=== get_average_session_duration ===")
+	print("Program: ", program.resource_path.get_file() if program.resource_path else "Unnamed program")
+	
+	var finished := get_sessions_for_program(program)
+	print("Total finished sessions: ", finished.size())
+	
+	if finished.is_empty():
+		print("Result: No finished sessions found, returning -1")
+		print("================================\n")
+		return -1
+
+	# Sort by timestamp_start descending (most recent first)
+	finished.sort_custom(func(a, b): return a.timestamp_start > b.timestamp_start)
+	print("Sessions sorted by timestamp (most recent first):")
+	for i in range(min(3, finished.size())):
+		print("  [", i, "] Timestamp: ", finished[i].timestamp_start, " | Duration: ", finished[i].get_duration(), " seconds")
+	
+	var sample_size = mini(finished.size(), 10)
+	var sample := finished.slice(0, sample_size)
+	print("Sample size (capped at 10): ", sample_size)
+	
+	var total_duration := 0
+	for i in range(sample.size()):
+		var s = sample[i]
+		var duration = s.get_duration()
+		total_duration += duration
+		print("  Session ", i, " duration: ", duration, " seconds")
+	
+	var average = total_duration / sample.size()
+	print("Total duration: ", total_duration, " seconds")
+	print("Average duration: ", average, " seconds (", average / 60.0, " minutes)")
+	print("================================\n")
+	
+	return average
+
+
 ## Returns every session in the given unix-time range (inclusive).
 func get_sessions_in_range(from_ts: int, to_ts: int) -> Array[HypertrophySessionResource]:
 	return sessions.filter(func(s): return s.timestamp_start >= from_ts and s.timestamp_start <= to_ts)
+
+
+## Returns a Dictionary mapping every known muscle (from MuscleData) to its
+## total set count within the given unix-time range.
+## Keys are muscle name Strings, values are ints (0 if nothing was logged).
+func get_volume_summary(from_ts: int, to_ts: int) -> Dictionary:
+	var summary := {}
+	for muscle in MuscleData.get_all_muscles():
+		summary[muscle] = get_volume_for_muscle_in_range(muscle, from_ts, to_ts)
+	return summary
+
+
+## Returns the total number of sets logged for a given target muscle within a
+## unix-time range (both bounds inclusive).
+## Only finished sessions are counted — active sessions are excluded.
+## [param target_muscle] should match ExerciseResource.target_muscle exactly (case-sensitive).
+## [param from_ts] / [param to_ts] are unix timestamps (e.g. from Time.get_unix_time_from_system()).
+func get_volume_for_muscle_in_range(target_muscle: String, from_ts: int, to_ts: int) -> int:
+	var total_sets := 0
+	for session in get_sessions_in_range(from_ts, to_ts):
+		if session.is_active():
+			continue
+		for s in session.sets:
+			if s.exercise != null and s.exercise.target_muscle == target_muscle:
+				total_sets += 1
+	return total_sets
 
 
 ## Returns the sets from the most recent session where the given exercise was logged.
@@ -273,5 +360,10 @@ func find_most_recent_sets(exercise: ExerciseResource) -> Array[ExerciseSetResou
 		result = all_sets.filter(func(s): return s.timestamp == fallback_ts)
 
 	result.sort_custom(func(a, b): return a.set_number < b.set_number)
+	# Remap set numbers to be contiguous from 1 regardless of what they were
+	# in the original session — pre-population always starts fresh from set 1.
+	for i in result.size():
+		result[i].set_number = i + 1
+
 	print("SessionManager.find_most_recent_sets: returning ", result.size(), " sets — ", result.map(func(s): return "set#" + str(s.set_number) + " w=" + str(s.weight) + " r=" + str(s.reps)))
 	return result

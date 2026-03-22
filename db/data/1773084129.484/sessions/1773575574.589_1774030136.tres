@@ -1,0 +1,110 @@
+[gd_resource type="Resource" script_class="HypertrophySessionResource" load_steps=15 format=3]
+
+[ext_resource type="Resource" path="res://db/data/1773084129.484/programs/1773575574.589.tres" id="1_c5l8a"]
+[ext_resource type="Script" path="res://db/scripts/hypertrophySession/hypertrophy_session_resource.gd" id="2_6l3cs"]
+[ext_resource type="Script" path="res://db/scripts/exercise/exercise_resource.gd" id="3_v7f8i"]
+[ext_resource type="Script" path="res://db/scripts/hypertrophySession/exercise_set_resource.gd" id="4_v163v"]
+
+[sub_resource type="Resource" id="Resource_pe7o6"]
+script = ExtResource("3_v7f8i")
+id = "1773453398.707"
+name = "ROMANIAN DEADLIFT"
+target_muscle = "Hamstrings"
+bodyweight = false
+isolation = true
+tension_profile = 1
+intensity = 2
+rep_range = Vector2i(6, 10)
+
+[sub_resource type="Resource" id="Resource_q6qur"]
+script = ExtResource("4_v163v")
+session = null
+exercise = SubResource("Resource_pe7o6")
+set_number = 1
+weight = 3.7
+reps = 6
+timestamp = 0
+
+[sub_resource type="Resource" id="Resource_f300u"]
+script = ExtResource("4_v163v")
+session = null
+exercise = SubResource("Resource_pe7o6")
+set_number = 2
+weight = 3.6
+reps = 5
+timestamp = 0
+
+[sub_resource type="Resource" id="Resource_kfbkm"]
+script = ExtResource("4_v163v")
+session = null
+exercise = SubResource("Resource_pe7o6")
+set_number = 3
+weight = 3.2
+reps = 2
+timestamp = 0
+
+[sub_resource type="Resource" id="Resource_gxa24"]
+script = ExtResource("3_v7f8i")
+id = "1773517273.283"
+name = "BENCH PRESS"
+target_muscle = "Chest"
+bodyweight = false
+isolation = true
+tension_profile = 0
+intensity = 1
+rep_range = Vector2i(3, 7)
+
+[sub_resource type="Resource" id="Resource_0qo7g"]
+script = ExtResource("4_v163v")
+session = null
+exercise = SubResource("Resource_gxa24")
+set_number = 1
+weight = 5.8
+reps = 7
+timestamp = 0
+
+[sub_resource type="Resource" id="Resource_lmtrr"]
+script = ExtResource("3_v7f8i")
+id = "1773522259.245"
+name = "PULLDOWN"
+target_muscle = "Back"
+bodyweight = false
+isolation = true
+tension_profile = 0
+intensity = 1
+rep_range = Vector2i(6, 10)
+
+[sub_resource type="Resource" id="Resource_2ddjh"]
+script = ExtResource("4_v163v")
+session = null
+exercise = SubResource("Resource_lmtrr")
+set_number = 1
+weight = 5.2
+reps = 6
+timestamp = 0
+
+[sub_resource type="Resource" id="Resource_pr70e"]
+script = ExtResource("4_v163v")
+session = null
+exercise = SubResource("Resource_gxa24")
+set_number = 2
+weight = 6.0
+reps = 8
+timestamp = 1774030172
+
+[sub_resource type="Resource" id="Resource_3biip"]
+script = ExtResource("4_v163v")
+session = null
+exercise = SubResource("Resource_lmtrr")
+set_number = 2
+weight = 5.4
+reps = 5
+timestamp = 1774030201
+
+[resource]
+script = ExtResource("2_6l3cs")
+program = ExtResource("1_c5l8a")
+timestamp_start = 1774030136
+timestamp_end = 1774030212
+entries = Array[Resource("res://db/scripts/hyperthropyProgram/program_exercise_entry.gd")]([])
+sets = Array[ExtResource("4_v163v")]([SubResource("Resource_q6qur"), SubResource("Resource_f300u"), SubResource("Resource_kfbkm"), SubResource("Resource_0qo7g"), SubResource("Resource_2ddjh"), SubResource("Resource_pr70e"), SubResource("Resource_3biip")])

@@ -1,0 +1,98 @@
+[gd_scene load_steps=4 format=3 uid="uid://uhynhfks5vf2"]
+
+[ext_resource type="Theme" uid="uid://f6n2yykmqd16" path="res://assets/style/theme.tres" id="1_10pqu"]
+[ext_resource type="Texture2D" uid="uid://ckxu85xwh7omx" path="res://assets/icons/add-box-svgrepo-com.svg" id="2_i5som"]
+
+[sub_resource type="GDScript" id="GDScript_s1cca"]
+script/source = "extends Button
+
+signal node_ready 
+
+# --------------------
+# DATA
+# --------------------
+var session_model: SessionModel
+var exercise_idx: int = -1  # Set default to -1 to indicate not initialized
+
+func _ready():
+	# Connect pressed signal early
+	pressed.connect(_on_pressed)
+	node_ready.emit()
+
+# ========================
+# INIT
+# ========================
+func initialize(model: SessionModel, idx: int):
+	session_model = model
+	exercise_idx = idx
+	
+	print(\"AddSetButton initialized with exercise_idx: \", exercise_idx)  # Debug print
+	
+	_connect_signals()
+
+# ========================
+# SIGNALS
+# ========================
+func _connect_signals():
+	node_ready.connect(_on_node_ready)
+
+# ========================
+# NODE READY HANDLER
+# ========================
+func _on_node_ready():
+	pass
+
+# ========================
+# BUTTON PRESSED HANDLER
+# ========================
+func _on_pressed():
+	if exercise_idx == -1:
+		print(\"Warning: Button not initialized yet!\")
+		return
+	add_set()
+
+# ========================
+# ACTIONS
+# ========================
+func add_set() -> void:
+	print(\"AddSetButton for exercise_idx: \", exercise_idx)  # Debug print
+	
+	# Get the current sets for this exercise
+	var current_sets = session_model.sets[exercise_idx] 
+	
+	var weight: float
+	var reps: int
+	
+	# If this is the first set, initialize with 0,0
+	if current_sets.is_empty():
+		weight = 0.0
+		reps = 0
+	# If appending a new set, use previous set's values
+	else:
+		var previous_set = current_sets[-1]  # Get the last set
+		weight = previous_set.weight
+		reps = previous_set.reps
+	
+	# Add the new set
+	session_model.add_set(
+		exercise_idx,
+		weight,
+		reps,
+		int(Time.get_unix_time_from_system())
+	)
+"
+
+[node name="AddSetButton" type="Button"]
+custom_minimum_size = Vector2(0, 25)
+anchors_preset = -1
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -472.0
+offset_bottom = -447.0
+grow_horizontal = 2
+theme = ExtResource("1_10pqu")
+icon = ExtResource("2_i5som")
+icon_alignment = 1
+expand_icon = true
+script = SubResource("GDScript_s1cca")

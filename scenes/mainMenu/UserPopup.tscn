@@ -44,6 +44,9 @@ func populate_users():
 		user_list.add_child(btn)
 
 func _on_user_pressed(user: UserResource):
+	# Reload Sessions
+	SessionManager.load_sessions( user )
+	
 	user_selected.emit(user)
 	NotificationManager.notify(\"User switched to: \\n\"+user.name)
 	popup_closed.emit()

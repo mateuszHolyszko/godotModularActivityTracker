@@ -25,44 +25,30 @@ var session_resource: HypertrophySessionResource
 var program_template: HypertrophyProgramResource
 
 var exercises: Array = []
-var sets: Array = []
+var sets: Array = [] # Array[Array[ExerciseSetResource]]  export so that its visible in the inspector for debugging
 
 var start_time: int = 0
 var end_time: int = 0
 
 
 # ========================
-# INIT (ALWAYS NEW SESSION)
+# INIT
 # ========================
 
 func _init(program: HypertrophyProgramResource):
-	#print("SessionModel: Initializing NEW session with program =", program)
-
 	program_template = program
 	session_resource = HypertrophySessionResource.new()
 
 	exercises.clear()
 	sets.clear()
 
-	# Keep original ExerciseResource references — they are read-only during a session
-	# and identity must be preserved for find_most_recent_sets lookups.
-	#print("SessionModel: Collecting exercises from program template")
 	for entry in program.entries:
-		#print("SessionModel: Adding exercise:", entry.exercise)
-		exercises.append(entry.exercise)
+		var exercise = entry.exercise
+		exercises.append(exercise)
+		sets.append([]) # Initialize empty sets for this exercise
 
-	# Pre-populate sets with each exercise's most recent logged values so the
-	# UI shows last session's weights/reps as a starting point.
-	#print("SessionModel: Pre-populating sets from history via SessionManager")
-	for i in exercises.size():
-		var exercise: ExerciseResource = exercises[i]
 		var history: Array = SessionManager.find_most_recent_sets(exercise)
 
-		if history.is_empty():
-			#print("SessionModel: No history found for exercise:", exercise.name)
-			continue
-
-		#print("SessionModel: Found", history.size(), "historical sets for exercise:", exercise.name)
 		for historic_set in history:
 			var s := ExerciseSetResource.new()
 			s.session = session_resource
@@ -70,11 +56,21 @@ func _init(program: HypertrophyProgramResource):
 			s.set_number = historic_set.set_number
 			s.weight = historic_set.weight
 			s.reps = historic_set.reps
-			s.timestamp = 0  # not logged yet — will be set when the user confirms the set
-			sets.append(s)
-			#print("SessionModel: Pre-populated set_number:", s.set_number, " weight:", s.weight, " reps:", s.reps)
+			s.timestamp = 0
 
-	#print("SessionModel: Initialization complete. Exercises:", exercises, " Pre-populated sets:", sets.size())
+			sets[-1].append(s)
+
+		# If no history, append an extra set with timestamp = now, weight = 0, reps = 0
+		if history.is_empty():
+			var now = Time.get_unix_time_from_system()
+			var extra_set := ExerciseSetResource.new()
+			extra_set.session = session_resource
+			extra_set.exercise = exercise
+			extra_set.set_number = 1
+			extra_set.weight = 0.0
+			extra_set.reps = 0
+			extra_set.timestamp = now
+			sets[-1].append(extra_set)
 
 	model_reset.emit()
 
@@ -84,58 +80,43 @@ func _init(program: HypertrophyProgramResource):
 # ========================
 
 func start_session(timestamp: int):
-	#print("SessionModel: Starting session at", timestamp)
 	start_time = timestamp
 	session_started.emit(timestamp)
 
 
 func end_session(timestamp: int):
-	#print("SessionModel: Ending session at", timestamp)
 	end_time = timestamp
 	session_ended.emit(timestamp)
 
 
 func finish_session() -> HypertrophySessionResource:
-	#print("SessionModel: Finishing session")
-
-	# Set end time on both the model and the resource.
 	var now := Time.get_unix_time_from_system()
 	end_time = now
+
 	session_resource.timestamp_start = start_time
 	session_resource.timestamp_end = now
 
-	# Discard sets where both weight and reps are zero (never filled in) or sets where timestamp = 0, this means that set was made with history but wasnt actually performed in this session.
-	var valid_sets := sets.filter(func(s: ExerciseSetResource) -> bool:
-		var keep: bool = not ((s.weight == 0.0 and s.reps == 0) or s.timestamp == 0)
-		if not keep:
-			print("SessionModel: Discarding empty set — exercise:", s.exercise, " set_number:", s.set_number)
-		return keep
-	)
-	sets = valid_sets
-
-	# Write the cleaned sets into the resource.
 	session_resource.sets.clear()
-	for s in sets:
-		session_resource.sets.append(s)
 
-	# Attach the originating program.
+	for exercise_sets in sets:
+		for s in exercise_sets:
+			var keep: bool = not ((s.weight == 0.0 and s.reps == 0) or s.timestamp == 0)
+			if keep:
+				session_resource.sets.append(s)
+
 	session_resource.program = program_template
 
-	#print("SessionModel: Session resource ready to save. Sets kept:", session_resource.sets.size())
-
 	session_ended.emit(now)
+
 	return session_resource
 
 
 func abort_session() -> void:
-	#print("SessionModel: Aborting session — discarding all data, nothing will be saved")
-
 	sets.clear()
 	exercises.clear()
 	start_time = 0
 	end_time = 0
 
-	# Reset the resource so any lingering reference is inert.
 	session_resource = HypertrophySessionResource.new()
 
 	model_reset.emit()
@@ -146,108 +127,64 @@ func abort_session() -> void:
 # ========================
 
 func add_set(exercise_idx: int, weight: float, reps: int, timestamp: int):
-	#print("SessionModel: Adding set for exercise index:", exercise_idx, " weight:", weight, " reps:", reps, " timestamp:", timestamp)
-
 	var set_res = ExerciseSetResource.new()
 	set_res.session = session_resource
 	set_res.exercise = exercises[exercise_idx]
-	set_res.set_number = get_next_set_number(exercise_idx)
+	set_res.set_number = sets[exercise_idx].size() + 1  
 	set_res.weight = weight
 	set_res.reps = reps
 	set_res.timestamp = timestamp
 
-	sets.append(set_res)
-
-	#print("SessionModel: Set added:", set_res)
+	sets[exercise_idx].append(set_res)
 
 	set_added.emit(exercise_idx, set_res)
 
 
 func remove_set(exercise_idx: int, set_number: int):
-	#print("SessionModel: Removing set for exercise index:", exercise_idx, " set_number:", set_number)
+	var exercise_sets = sets[exercise_idx]
 
+	var new_array := []
 	var removed := false
-	var exercise = exercises[exercise_idx]
 
-	sets = sets.filter(func(s):
-		var match = (s.exercise == exercise and s.set_number == set_number)
-		if match:
-			#print("SessionModel: Removing set:", s)
+	for s in exercise_sets:
+		if s.set_number == set_number:
 			removed = true
-		return not match
-	)
+		else:
+			new_array.append(s)
+
+	sets[exercise_idx] = new_array
 
 	if removed:
 		set_removed.emit(exercise_idx, set_number)
 
-	#print("SessionModel: Sets after removal:", sets)
-
 
 func edit_set(exercise_idx: int, set_number: int, new_weight: float, new_reps: int):
-	#print("SessionModel: Editing set for exercise index:", exercise_idx, " set_number:", set_number)
-
-	var exercise = exercises[exercise_idx]
-
-	for s in sets:
-		if s.exercise == exercise and s.set_number == set_number:
-			s.weight = new_weight
-			s.reps = new_reps
-
-			#print("SessionModel: Set edited:", s)
-
-			set_edited.emit(exercise_idx, set_number, s)
-			return
-
+	sets[exercise_idx][set_number].weight = new_weight
+	sets[exercise_idx][set_number].reps = new_reps
+	sets[exercise_idx][set_number].timestamp = Time.get_unix_time_from_system()
+	set_edited.emit(exercise_idx, set_number, sets[exercise_idx][set_number])
 
 # ========================
 # HELPERS
 # ========================
 
-func get_next_set_number(exercise_idx: int) -> int:
-	#print("SessionModel: Calculating next set number for exercise index:", exercise_idx)
-
-	var count = 0
-	var exercise = exercises[exercise_idx]
-
-	for s in sets:
-		if s.exercise == exercise:
-			count += 1
-
-	var next_number = count + 1
-	#print("SessionModel: Next set number is:", next_number)
-
-	return next_number
-
 
 func get_sets_for_exercise(exercise_idx: int) -> Array:
-	#print("SessionModel: Getting sets for exercise index:", exercise_idx)
-
-	var result: Array = []
-	var exercise = exercises[exercise_idx]
-
-	for s in sets:
-		if s.exercise == exercise:
-			result.append(s)
-
-	if result.is_empty():
-		#print("SessionModel: No sets found, creating and adding one empty set")
-
+	if sets[exercise_idx].is_empty():
+		var exercise = exercises[exercise_idx]
+		
 		var empty_set = ExerciseSetResource.new()
 		empty_set.session = session_resource
 		empty_set.exercise = exercise
-		empty_set.set_number = 1
+		empty_set.set_number = 1  # Since size is 0, size+1 = 1
 		empty_set.weight = 0.0
 		empty_set.reps = 0
 		empty_set.timestamp = 0
-
-		sets.append(empty_set)
-		result.append(empty_set)
-
+		
+		sets[exercise_idx].append(empty_set)
 		set_added.emit(exercise_idx, empty_set)
-
-	#print("SessionModel: Sets found:", result)
-
-	return result
+	
+	return sets[exercise_idx]
 
 
 # ========================
@@ -255,10 +192,7 @@ func get_sets_for_exercise(exercise_idx: int) -> Array:
 # ========================
 
 func change_exercise(exercise_idx: int, new_exercise):
-	#print("SessionModel: Changing exercise at index:", exercise_idx, " to:", new_exercise)
-
 	exercises[exercise_idx] = new_exercise
-
 	exercise_changed.emit(exercise_idx)
 
 
@@ -267,5 +201,7 @@ func change_exercise(exercise_idx: int, new_exercise):
 # ========================
 
 func to_resource_sets() -> Array:
-	#print("SessionModel: Returning sets for resource saving:", sets)
-	return sets
+	var flat: Array = []
+	for exercise_sets in sets:
+		flat.append_array(exercise_sets)
+	return flat

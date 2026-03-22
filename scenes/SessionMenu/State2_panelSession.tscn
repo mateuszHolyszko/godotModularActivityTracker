@@ -1,4 +1,4 @@
-[gd_scene load_steps=6 format=3 uid="uid://bxkeo3bbccqlo"]
+[gd_scene load_steps=7 format=3 uid="uid://bxkeo3bbccqlo"]
 
 [ext_resource type="Theme" uid="uid://f6n2yykmqd16" path="res://assets/style/theme.tres" id="1_cy78c"]
 
@@ -16,8 +16,9 @@ const EXERCISE_SESSION_ROW_SCENE = preload(\"res://scenes/SessionMenu/exerciseSe
 var active_program: HypertrophyProgramResource
 var sessionModel: SessionModel
 
-var rows: Array = []  # keep references
-
+func _ready():
+	finish_session_button.pressed.connect(_on_finish_pressed)
+	abort_session_button.pressed.connect(_on_abort_pressed)
 
 # ========================
 # INIT
@@ -28,74 +29,50 @@ func initialize(program: HypertrophyProgramResource) -> void:
 
 	active_program = program
 	# Make sure sessions are loaded
-	SessionManager.load_sessions( DataManager.current_user )
+	#SessionManager.load_sessions( DataManager.current_user ) <- this is being automaticly changed on user change (in popUpMenu in main, propably should do that in DataManager xd)
 	sessionModel = SessionModel.new(active_program)
-
-	_connect_model_signals()
-	_build_rows()
+	# Toggle navBar
+	MenuManager.toggle_nav_buttons(true)
 
 	# Set start time
 	sessionModel.start_time = Time.get_unix_time_from_system()
 	session_started.emit(sessionModel)
-
-
-# ========================
-# SETUP
-# ========================
-
-func _connect_model_signals():
-	print(\"SessionView: connecting model signals\")
-
-	sessionModel.exercise_changed.connect(_on_exercise_changed)
-
-
-func _build_rows():
-	print(\"SessionView: building rows\")
-
-	rows.clear()
-	NodeUtils.queue_free_children(scroll_content)
-
-	for i in range(sessionModel.exercises.size()):
-		var row = EXERCISE_SESSION_ROW_SCENE.instantiate()
-		scroll_content.add_child(row)
-
-		row.call_deferred(\"initialize\", sessionModel, i)  # PASS MODEL AND TELL EX_ROW WHAT INDEX IT IS
-		#each row knows its id
-		# ignores signals for other ids !!
-
-		rows.append(row)
-
-	print(\"SessionView: rows created:\", rows.size())
-
-
-# ========================
-# SIGNAL HANDLERS
-# ========================
-
-func _on_exercise_changed(exercise_idx: int):
-	print(\"SessionView: exercise changed at\", exercise_idx)
-
-	# Only update that specific row
-	if exercise_idx < rows.size():
-		rows[exercise_idx].refresh_exercise()
-
-
-# ========================
-# BUTTONS
-# ========================
-
-func _ready() -> void:
-	finish_session_button.pressed.connect(_on_finish_pressed)
-	abort_session_button.pressed.connect(_on_abort_pressed)
-
-
+	
+	## DEBUG: Pass session for Debug
+	var debug_panel = $VC/HC/LeftPanel/VC/Panel/DebugPanel # Prints live session model fields
+	debug_panel.initialize(sessionModel)
+	#var now := Time.get_unix_time_from_system()
+	#var sets_this_week := SessionManager.get_volume_summary( now - 604800, now)
+	#print(\"									SETS THIS WEEK: \",sets_this_week)
+	
+	## CREATE EX_ROWS
+	
+	# Clear existing content (if any)
+	for child in scroll_content.get_children():
+		child.queue_free()
+	
+	# Get sorted entries and instantiate rows in correct order
+	var sorted_entries = active_program.get_sorted_entries()
+	for entry in sorted_entries:
+		var exercise_row = EXERCISE_SESSION_ROW_SCENE.instantiate()
+		
+		# Pass session and order
+		exercise_row.initialize(sessionModel,entry.order)  
+		scroll_content.add_child(exercise_row)
+		
 func _on_finish_pressed() -> void:
 	print(\"SessionView: finish pressed\")
 
 	var outputSessionResource = sessionModel.finish_session()
 	SessionManager.save_session( outputSessionResource )
 	
+	# Reload sessions
+	SessionManager.load_sessions( DataManager.current_user )
 	NotificationManager.notify(\"Session Finished\")
+	
+	# Toggle navBar
+	MenuManager.toggle_nav_buttons(false)
+	MenuManager.change_menu(\"res://scenes/SessionMenu/sessionMenu.tscn\")
 
 
 func _on_abort_pressed() -> void:
@@ -107,18 +84,19 @@ func _abort_session() -> void:
 	print(\"SessionView: aborting session\")
 	
 	sessionModel.abort_session()
-
 	NotificationManager.notify(\"Session Aborted\")
+	
+	# Toggle navBar
+	MenuManager.toggle_nav_buttons(false)
+	MenuManager.change_menu(\"res://scenes/SessionMenu/sessionMenu.tscn\")
 "
 
 [sub_resource type="GDScript" id="GDScript_7ja76"]
 script/source = "extends Panel
-
 @onready var main_control = $\"../..\"
 @onready var start_time_label = $HC/StartTimePanel/HC/StartTimeLabel
 @onready var elapsed_time_label = $HC/ElapsedTimePanel2/HC/ElapsedTimeLabel
 @onready var average_time_label = $HC/AverageTimePanel3/HC/AverageTimeLabel
-
 var session_model: SessionModel
 var time_zone_offset: int = 0
 
@@ -164,8 +142,7 @@ func update_labels():
 	print(\"Session info panel: updating labels\")
 	update_start_time()
 	update_elapsed_time()
-	# TODO: Implement average time calculation
-	# average_time_label.text = \"0\"
+	update_average_time()
 
 func update_start_time():
 	if session_model.start_time > 0:
@@ -191,6 +168,18 @@ func update_elapsed_time():
 		var duration = session_model.end_time - session_model.start_time
 		elapsed_time_label.text = _format_duration(duration)
 
+func update_average_time():
+	var program = session_model.program_template
+	if program == null:
+		average_time_label.text = \"--:--\"
+		return
+
+	var avg = SessionManager.get_average_session_duration(program)
+	if avg == -1:
+		average_time_label.text = \"--:--\"
+	else:
+		average_time_label.text = _format_duration(avg)
+
 func _format_duration(seconds: float) -> String:
 	var total_seconds = int(seconds)
 	var hours = total_seconds / 3600
@@ -208,6 +197,57 @@ func refresh():
 "
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_0gpup"]
+
+[sub_resource type="GDScript" id="GDScript_2y3kh"]
+script/source = "# DebugPanel.gd
+extends Panel
+
+@onready var debug_text = $RichTextLabel
+
+var session_model: SessionModel
+
+func initialize(model: SessionModel):
+	session_model = model
+	_connect_signals()
+	_update_debug_view()
+
+func _connect_signals():
+	session_model.set_added.connect(_on_data_changed)
+	session_model.set_removed.connect(_on_data_changed)
+	session_model.set_edited.connect(_on_data_changed)
+	session_model.exercise_changed.connect(_on_data_changed)
+	session_model.model_reset.connect(_on_data_changed)
+
+func _on_data_changed(_a = null, _b = null, _c = null):
+	_update_debug_view()
+
+func _update_debug_view():
+	if not session_model:
+		return
+	
+	var output = \"[b]=== SESSION MODEL DEBUG ===[/b]\\n\\n\"
+	output += \"[b]Ex:[/b] %d\\n\" % session_model.exercises.size()
+	output += \"[b]Start Time:[/b] %d\\n\" % session_model.start_time
+	output += \"[b]End Time:[/b] %d\\n\\n\" % session_model.end_time
+	
+	for i in range(session_model.exercises.size()):
+		var exercise = session_model.exercises[i]
+		var exercise_sets = session_model.sets[i]
+		
+		output += \"[b]%d. %s[/b]\\n\" % [i + 1, exercise.name]
+		output += \"   Sets: %d\\n\" % exercise_sets.size()
+		
+		for set_data in exercise_sets:
+			output += \"   [%d] W: %.1f kg | R: %d | Stamp: %d\\n\" % [
+				set_data.set_number,
+				set_data.weight,
+				set_data.reps,
+				set_data.timestamp
+			]
+		output += \"\\n\"
+	
+	debug_text.text = output
+"
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_2xaae"]
 content_margin_left = 10.0
@@ -334,7 +374,7 @@ theme_override_constants/separation = 0
 [node name="LeftPanel" type="Panel" parent="VC/HC"]
 layout_mode = 2
 size_flags_horizontal = 3
-size_flags_stretch_ratio = 0.4
+size_flags_stretch_ratio = 0.5
 
 [node name="VC" type="VBoxContainer" parent="VC/HC/LeftPanel"]
 layout_mode = 1
@@ -348,6 +388,28 @@ theme_override_constants/separation = 0
 [node name="Panel" type="Panel" parent="VC/HC/LeftPanel/VC"]
 layout_mode = 2
 size_flags_vertical = 3
+
+[node name="DebugPanel" type="Panel" parent="VC/HC/LeftPanel/VC/Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = SubResource("GDScript_2y3kh")
+
+[node name="RichTextLabel" type="RichTextLabel" parent="VC/HC/LeftPanel/VC/Panel/DebugPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/normal_font_size = 22
+theme_override_font_sizes/bold_font_size = 22
+theme_override_font_sizes/italics_font_size = 22
+theme_override_font_sizes/bold_italics_font_size = 22
+theme_override_font_sizes/mono_font_size = 22
 
 [node name="SessionButtonsPanel" type="Panel" parent="VC/HC/LeftPanel/VC"]
 layout_mode = 2
@@ -389,6 +451,7 @@ layout_direction = 3
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_styles/panel = SubResource("StyleBoxFlat_2xaae")
+follow_focus = true
 
 [node name="ScrollContnent" type="VBoxContainer" parent="VC/HC/MC/VC/ScrollContainer"]
 layout_direction = 2

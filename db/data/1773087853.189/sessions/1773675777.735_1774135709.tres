@@ -1,0 +1,110 @@
+[gd_resource type="Resource" script_class="HypertrophySessionResource" load_steps=15 format=3]
+
+[ext_resource type="Resource" path="res://db/data/1773087853.189/programs/1773675777.735.tres" id="1_n0bn7"]
+[ext_resource type="Script" path="res://db/scripts/hypertrophySession/hypertrophy_session_resource.gd" id="2_odvlk"]
+[ext_resource type="Script" path="res://db/scripts/exercise/exercise_resource.gd" id="3_fl2gx"]
+[ext_resource type="Script" path="res://db/scripts/hypertrophySession/exercise_set_resource.gd" id="4_infaq"]
+
+[sub_resource type="Resource" id="Resource_o5nfw"]
+script = ExtResource("3_fl2gx")
+id = "1773674431.389"
+name = "RING PUSH UP"
+target_muscle = "Chest"
+bodyweight = true
+isolation = true
+tension_profile = 0
+intensity = 1
+rep_range = Vector2i(8, 12)
+
+[sub_resource type="Resource" id="Resource_yihij"]
+script = ExtResource("4_infaq")
+session = null
+exercise = SubResource("Resource_o5nfw")
+set_number = 1
+weight = 1.4
+reps = 4
+timestamp = 1774135720
+
+[sub_resource type="Resource" id="Resource_n20k4"]
+script = ExtResource("4_infaq")
+session = null
+exercise = SubResource("Resource_o5nfw")
+set_number = 2
+weight = 1.3
+reps = 3
+timestamp = 1774135724
+
+[sub_resource type="Resource" id="Resource_20vfw"]
+script = ExtResource("4_infaq")
+session = null
+exercise = SubResource("Resource_o5nfw")
+set_number = 3
+weight = 1.2
+reps = 1
+timestamp = 0
+
+[sub_resource type="Resource" id="Resource_bfhqc"]
+script = ExtResource("3_fl2gx")
+id = "1773531483.514"
+name = "FRENCH PRESS"
+target_muscle = "Triceps"
+bodyweight = false
+isolation = true
+tension_profile = 0
+intensity = 0
+rep_range = Vector2i(9, 16)
+
+[sub_resource type="Resource" id="Resource_fcfnw"]
+script = ExtResource("4_infaq")
+session = null
+exercise = SubResource("Resource_bfhqc")
+set_number = 1
+weight = 1.5
+reps = 5
+timestamp = 1774135732
+
+[sub_resource type="Resource" id="Resource_hp6kg"]
+script = ExtResource("4_infaq")
+session = null
+exercise = SubResource("Resource_bfhqc")
+set_number = 2
+weight = 1.5
+reps = 4
+timestamp = 1774135739
+
+[sub_resource type="Resource" id="Resource_1eqpa"]
+script = ExtResource("3_fl2gx")
+id = "1773798402.916"
+name = "SQUAT"
+target_muscle = "Quads"
+bodyweight = false
+isolation = false
+tension_profile = 0
+intensity = 2
+rep_range = Vector2i(6, 12)
+
+[sub_resource type="Resource" id="Resource_47s6e"]
+script = ExtResource("4_infaq")
+session = null
+exercise = SubResource("Resource_1eqpa")
+set_number = 1
+weight = 2.7
+reps = 8
+timestamp = 1774135749
+
+[sub_resource type="Resource" id="Resource_81xaa"]
+script = ExtResource("4_infaq")
+session = null
+exercise = SubResource("Resource_1eqpa")
+set_number = 2
+weight = 2.6
+reps = 6
+timestamp = 1774135753
+
+[resource]
+script = ExtResource("2_odvlk")
+program = ExtResource("1_n0bn7")
+timestamp_start = 1774135709
+timestamp_end = 1774135756
+entries = Array[Resource("res://db/scripts/hyperthropyProgram/program_exercise_entry.gd")]([])
+sets = Array[ExtResource("4_infaq")]([SubResource("Resource_yihij"), SubResource("Resource_n20k4"), SubResource("Resource_20vfw"), SubResource("Resource_fcfnw"), SubResource("Resource_hp6kg"), SubResource("Resource_47s6e"), SubResource("Resource_81xaa")])

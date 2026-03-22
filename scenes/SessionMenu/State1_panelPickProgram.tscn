@@ -1,9 +1,277 @@
-[gd_scene load_steps=4 format=3 uid="uid://dxeq81ut0lccp"]
+[gd_scene load_steps=6 format=3 uid="uid://dxeq81ut0lccp"]
 
 [ext_resource type="Theme" uid="uid://f6n2yykmqd16" path="res://assets/style/theme.tres" id="1_iwjkd"]
 [ext_resource type="Script" path="res://scenes/SessionMenu/State1_panelPickProgram.gd" id="2_bnd5e"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_ihwd6"]
+
+[sub_resource type="GDScript" id="GDScript_o7vqk"]
+script/source = "extends Panel
+
+var chart: BarChart
+var no_data_label: Label
+var is_initialized := false
+
+func _ready():
+	# Create and add chart
+	chart = BarChart.new()
+	chart.set_anchors_preset(Control.PRESET_FULL_RECT)
+	chart.offset_left = 0
+	chart.offset_right = 0
+	chart.offset_top = 0
+	chart.offset_bottom = 0
+	add_child(chart)
+	
+	# Create no data label (initially hidden)
+	no_data_label = Label.new()
+	no_data_label.text = \"No sessions found in the last 14 days\"
+	no_data_label.add_theme_color_override(\"font_color\", Color.GRAY)
+	no_data_label.add_theme_font_size_override(\"font_size\", 20)
+	no_data_label.set_horizontal_alignment(HORIZONTAL_ALIGNMENT_CENTER)
+	no_data_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	no_data_label.visible = false
+	add_child(no_data_label)
+	
+	
+	SessionManager.sessions_loaded.connect(_on_sessions_loaded)
+	DataManager.user_changed.connect(_on_current_user_changed)
+	
+	# Initial data load
+	_load_and_display_data()
+
+func _load_and_display_data() -> void:
+	\"\"\"Load volume data and update the display\"\"\"
+	# Check if chart is valid
+	if not is_instance_valid(chart):
+		return
+	
+	await get_tree().create_timer(0.1).timeout # Wait, propably for user to be selected (not sure)
+	
+	# Check if current_user exists
+	if DataManager.current_user == null:
+		_show_no_data_label(true, \"Please select a user\")
+		chart.visible = false
+		return
+	
+	# Ensure SessionManager is available
+	if not SessionManager:
+		push_error(\"SessionManager not found!\")
+		_show_no_data_label(true, \"SessionManager not available\")
+		chart.visible = false
+		return
+	
+	# Get Volume summary
+	var now := Time.get_unix_time_from_system()
+	var start_time := now - 14 * 24 * 60 * 60
+	
+	# Check if get_volume_summary exists and is callable
+	if not SessionManager.has_method(\"get_volume_summary\"):
+		push_error(\"SessionManager.get_volume_summary not found!\")
+		_show_no_data_label(true, \"Data method not available\")
+		chart.visible = false
+		return
+	
+	var sets_this_week := SessionManager.get_volume_summary(start_time, now)
+	
+	# Check if we have valid data
+	var has_data = false
+	if sets_this_week and sets_this_week is Dictionary and not sets_this_week.is_empty():
+		# Check if any value is greater than 0
+		for value in sets_this_week.values():
+			if value > 0:
+				has_data = true
+				break
+	
+	if has_data:
+		_show_no_data_label(false)
+		chart.visible = true
+		chart.set_data(sets_this_week)
+	else:
+		_show_no_data_label(true, \"No sessions found in the last 14 days\")
+		chart.visible = false
+
+func _on_sessions_loaded() -> void:
+	\"\"\"Handle sessions_loaded signal from SessionManager\"\"\"
+	_load_and_display_data()
+
+func _on_current_user_changed() -> void:
+	\"\"\"Handle user change events\"\"\"
+	_load_and_display_data()
+
+func _show_no_data_label(show: bool, message: String = \"\") -> void:
+	\"\"\"Show or hide the no data label with optional custom message\"\"\"
+	if not no_data_label:
+		return
+	
+	if message:
+		no_data_label.text = message
+	
+	no_data_label.visible = show
+	
+	# Center the label when visible
+	if show:
+		# Need to wait one frame for proper sizing
+		await get_tree().process_frame
+		var center_x = (size.x - no_data_label.size.x) / 2
+		var center_y = (size.y - no_data_label.size.y) / 2
+		no_data_label.set_position(Vector2(center_x, center_y))
+
+func _on_resized() -> void:
+	\"\"\"Handle panel resize to reposition label if needed\"\"\"
+	if no_data_label and no_data_label.visible:
+		var center_x = (size.x - no_data_label.size.x) / 2
+		var center_y = (size.y - no_data_label.size.y) / 2
+		no_data_label.set_position(Vector2(center_x, center_y))
+
+func _exit_tree() -> void:
+	\"\"\"Clean up connections when exiting\"\"\"
+	if SessionManager and SessionManager.has_signal(\"sessions_loaded\"):
+		if SessionManager.sessions_loaded.is_connected(_on_sessions_loaded):
+			SessionManager.sessions_loaded.disconnect(_on_sessions_loaded)
+	
+	if DataManager and DataManager.has_signal(\"user_changed\"):
+		if DataManager.user_changed.is_connected(_on_current_user_changed):
+			DataManager.user_changed.disconnect(_on_current_user_changed)
+"
+
+[sub_resource type="GDScript" id="GDScript_pvp2v"]
+script/source = "extends VBoxContainer
+
+var sessions: Array[HypertrophySessionResource] = []
+var is_loading: bool = false
+
+# Called when the node enters the scene tree for the first time.
+func _ready():
+	# Connect to DataManager's user_changed signal
+	if SessionManager:
+		SessionManager.sessions_loaded.connect(_on_sessions_changed)
+		#SessionManager.session_ended.connect(_on_sessions_changed) # made it so Session manager reloads Sessions after session ends, so sessions_loaded will be emited making this redundant 
+	else:
+		print(\"Warning: DataManager not found\")
+	
+	grow_vertical = Control.GROW_DIRECTION_END
+	
+	# Initial load
+	_refresh_session_list()
+
+# Called when the user changes
+func _on_sessions_changed():
+	print(\"User changed, refreshing session history\")
+	_refresh_session_list()
+
+# Refresh the session list
+func _refresh_session_list():
+	if is_loading:
+		return
+	
+	is_loading = true
+	
+	# Clear existing children
+	_clear_children()
+	
+	# Show loading message
+	_show_loading_message()
+	
+	# Use call_deferred to allow UI to update
+	call_deferred(\"_load_and_display_sessions\")
+
+func _load_and_display_sessions():
+	# Get sessions from the last week
+	sessions = _get_sessions_from_last_week()
+	
+	# Clear loading message and display sessions
+	_clear_children()
+	_create_session_labels(sessions)
+	
+	is_loading = false
+
+# Get sessions from the last 7 days (1 week)
+func _get_sessions_from_last_week() -> Array[HypertrophySessionResource]:
+	var now = Time.get_unix_time_from_system()
+	var one_week_ago = now - (7 * 24 * 60 * 60)
+	
+	var all_sessions = SessionManager.get_sessions_in_range(one_week_ago, now)
+	
+	# Sort by most recent first
+	all_sessions.sort_custom(func(a, b): return a.timestamp_start > b.timestamp_start)
+	
+	# Get up to 10 most recent sessions
+	return all_sessions.slice(0, mini(all_sessions.size(), 10))
+
+# Create labels for each session
+func _create_session_labels(sessions: Array[HypertrophySessionResource]):
+	if sessions.is_empty():
+		_show_empty_message()
+		return
+	
+	for session in sessions:
+		var session_item = _create_session_item(session)
+		add_child(session_item)
+
+func _create_session_item(session: HypertrophySessionResource) -> Control:
+	# Create a container for the session item
+	var container = HBoxContainer.new()
+	container.size_flags_horizontal = Control.SIZE_EXPAND | Control.SIZE_FILL
+	
+	# Create program name label (left side)
+	var program_label = Label.new()
+	program_label.text = _get_program_name(session)
+	program_label.add_theme_font_size_override(\"font_size\", 24)
+	program_label.add_theme_color_override(\"font_color\", Color.WHITE)
+	program_label.add_theme_constant_override(\"margin_bottom\", 5)
+	program_label.add_theme_constant_override(\"margin_top\", 5)
+	program_label.set_horizontal_alignment(HORIZONTAL_ALIGNMENT_LEFT)
+	program_label.size_flags_horizontal = Control.SIZE_EXPAND | Control.SIZE_FILL
+	
+	# Create date label (right side)
+	var date_label = Label.new()
+	date_label.text = _format_date(session.timestamp_start)
+	date_label.add_theme_font_size_override(\"font_size\", 24)
+	date_label.add_theme_color_override(\"font_color\", Color.WHITE)
+	date_label.add_theme_constant_override(\"margin_bottom\", 5)
+	date_label.add_theme_constant_override(\"margin_top\", 5)
+	date_label.set_horizontal_alignment(HORIZONTAL_ALIGNMENT_RIGHT)
+	
+	# Add both labels to the container
+	container.add_child(program_label)
+	container.add_child(date_label)
+	
+	return container
+
+func _get_program_name(session: HypertrophySessionResource) -> String:
+	if session.program and session.program.name:
+		return session.program.name
+	return \"Unknown Program\"
+
+func _format_date(timestamp: int) -> String:
+	var date_time = Time.get_datetime_string_from_unix_time(timestamp)
+	var date_parts = date_time.split(\"T\")
+	return date_parts[0] if date_parts.size() > 0 else \"Unknown Date\"
+
+func _show_loading_message():
+	var label = Label.new()
+	label.text = \"Loading sessions...\"
+	label.add_theme_color_override(\"font_color\", Color.GRAY)
+	label.add_theme_font_size_override(\"font_size\", 14)
+	add_child(label)
+
+func _show_empty_message():
+	var label = Label.new()
+	label.text = \"No sessions found in the last week\"
+	label.add_theme_color_override(\"font_color\", Color.GRAY)
+	label.add_theme_font_size_override(\"font_size\", 20)
+	label.set_horizontal_alignment(HORIZONTAL_ALIGNMENT_CENTER)
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	add_child(label)
+
+func _clear_children():
+	for child in get_children():
+		child.queue_free()
+
+# Public method to manually refresh
+func refresh():
+	_refresh_session_list()
+"
 
 [node name="State1PanelPickProgram" type="Panel"]
 anchors_preset = 15
@@ -48,6 +316,7 @@ layout_mode = 2
 size_flags_vertical = 3
 
 [node name="noData" type="Panel" parent="MC/HC/LastSessionsSummary/VC/TargetVolumePanel"]
+visible = false
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -66,17 +335,76 @@ text = "No Data"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="SessionHistoryPanel" type="Panel" parent="MC/HC/LastSessionsSummary/VC"]
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="noData" type="Panel" parent="MC/HC/LastSessionsSummary/VC/SessionHistoryPanel"]
+[node name="VC" type="VBoxContainer" parent="MC/HC/LastSessionsSummary/VC/TargetVolumePanel"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+
+[node name="Label" type="Label" parent="MC/HC/LastSessionsSummary/VC/TargetVolumePanel/VC"]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_stretch_ratio = 0.2
+text = "Volume Summary (14 days)"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="BarChartVolSumPanel" type="Panel" parent="MC/HC/LastSessionsSummary/VC/TargetVolumePanel/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+script = SubResource("GDScript_o7vqk")
+
+[node name="SessionHistoryPanel" type="Panel" parent="MC/HC/LastSessionsSummary/VC"]
+clip_contents = true
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="VC" type="VBoxContainer" parent="MC/HC/LastSessionsSummary/VC/SessionHistoryPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Label" type="Label" parent="MC/HC/LastSessionsSummary/VC/SessionHistoryPanel/VC"]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_stretch_ratio = 0.2
+text = "Session History"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Panel" type="Panel" parent="MC/HC/LastSessionsSummary/VC/SessionHistoryPanel/VC"]
+clip_contents = true
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="V_session_history_container" type="VBoxContainer" parent="MC/HC/LastSessionsSummary/VC/SessionHistoryPanel/VC/Panel"]
+clip_contents = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_vertical = 3
+alignment = 1
+script = SubResource("GDScript_pvp2v")
+
+[node name="noData" type="Panel" parent="MC/HC/LastSessionsSummary/VC/SessionHistoryPanel"]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("1_iwjkd")
 
 [node name="Label" type="Label" parent="MC/HC/LastSessionsSummary/VC/SessionHistoryPanel/noData"]
 layout_mode = 1

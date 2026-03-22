@@ -6,85 +6,26 @@
 [sub_resource type="GDScript" id="GDScript_rjgvt"]
 script/source = "extends Control
 
+signal node_ready
+
 var session_model: SessionModel
 var exercise_idx: int
 var exercise: ExerciseResource
+var set_rows: Array = []  # Array to store set row instances
 
 @onready var set_container = $Panel/HC/PanelMainContent/VC/Panel/VSetBoxContainer
 @onready var main_control = $\".\"
 @onready var exercise_button = $Panel/HC/PanelMainContent/VC/ExerciseButton
 @onready var skip_exercise_button = $Panel/HC/SkipExerciseButton
 
+var EXERCISE_ROW_HEIGHT = 0
 const ROW_HEIGHT = 100
 const ADD_BUTTON_HEIGHT = 25
 const EXERCISE_SESSION_ROW_SET_SCENE = preload(\"res://scenes/SessionMenu/exerciseSessionRowSet.tscn\")
+const ADD_SET_ROW_BUTTON_SCENE = preload(\"res://scenes/SessionMenu/addSetButton.tscn\")
 
-# ========================
-# INIT
-# ========================
-func initialize(model: SessionModel, idx: int):
-	session_model = model
-	exercise_idx = idx
-	exercise = session_model.exercises[exercise_idx]
-
-	print(\"ExerciseRow: init idx =\", idx)
-
-	_connect_signals()
-	_refresh_all()
-
-
-# ========================
-# SIGNAL CONNECTIONS
-# ========================
-func _connect_signals():
-	session_model.set_added.connect(_on_set_added)
-	session_model.set_removed.connect(_on_set_removed)
-	session_model.set_edited.connect(_on_set_edited)
-	session_model.exercise_changed.connect(_on_exercise_changed)
-
-
-# ========================
-# SIGNAL HANDLERS
-# ========================
-func _on_set_added(idx, set_res):
-	if idx != exercise_idx:
-		return
-	print(\"ExerciseRow\", exercise_idx, \": set added\")
-	_add_row_for_new_set(set_res)
-
-
-func _on_set_removed(idx, set_number):
-	if idx != exercise_idx:
-		return
-	print(\"ExerciseRow\", exercise_idx, \": set removed\")
-	_remove_row_for_set_number(set_number)
-
-
-func _on_set_edited(idx, set_number, set_res):
-	if idx != exercise_idx:
-		return
-	print(\"ExerciseRow\", exercise_idx, \": set edited\")
-	_update_row_for_set(set_res)
-
-
-func _on_exercise_changed(idx):
-	if idx != exercise_idx:
-		return
-	print(\"ExerciseRow\", exercise_idx, \": exercise changed\")
-	exercise = session_model.exercises[exercise_idx]
-	_refresh_exercise()
-
-
-# ========================
-# REFRESH LOGIC
-# ========================
-func _refresh_all():
-	_refresh_exercise()
-	_refresh_sets()
-
-
-func _refresh_exercise():
-	print(\"ExerciseRow\", exercise_idx, \": refreshing exercise UI\")
+func _ready():
+	# When the boxes are loaded, style them (by now initialize should have run so exercise is loaded)
 	var style = StyleBoxFlat.new()
 	style.bg_color = MuscleData.MUSCLE_COLORS.get(exercise.target_muscle, Color.WHITE)
 	style.set_border_width_all(2)
@@ -95,70 +36,97 @@ func _refresh_exercise():
 	exercise_button.add_theme_stylebox_override(\"pressed\", style)
 	exercise_button.add_theme_color_override(\"font_color\", Color.BLACK)
 	exercise_button.text = exercise.name
-
-
-func _refresh_sets():
-	print(\"ExerciseRow\", exercise_idx, \": refreshing sets\")
-	var exercise_sets = session_model.get_sets_for_exercise(exercise_idx)
-	var current_rows = set_container.get_children()
-
-	# Update existing rows or add new ones
-	for i in range(exercise_sets.size()):
-		var set_data = exercise_sets[i]
-		if i < current_rows.size():
-			current_rows[i].call_deferred(\"update_data\", set_data)
-		else:
-			_add_row_for_new_set(set_data)
-
-	# Remove extra rows if sets were removed
-	if current_rows.size() > exercise_sets.size():
-		for i in range(exercise_sets.size(), current_rows.size()):
-			current_rows[i].queue_free()
-
-	_update_container_height()
-
+	
+	# Emit node_ready signal at the end of _ready
+	node_ready.emit()
 
 # ========================
-# ROW MANAGEMENT
+# INIT
 # ========================
-func _add_row_for_new_set(set_data: ExerciseSetResource) -> void:
-	var row = EXERCISE_SESSION_ROW_SET_SCENE.instantiate()
-	set_container.add_child(row)
-	row.call_deferred(\"setup\", set_data, session_model, exercise_idx)
-	_update_container_height()
+func initialize(model: SessionModel, idx: int):
+	session_model = model
+	exercise_idx = idx # Using model can get which exercise is this row
+	exercise = session_model.exercises[exercise_idx]
+	
+	_connect_signals()
 
-
-func _remove_row_for_set_number(set_number: int) -> void:
-	for child in set_container.get_children():
-		if child.set_data.set_number == set_number:
-			child.queue_free()
-			break
-	_update_container_height()
-
-
-func _update_row_for_set(set_data: ExerciseSetResource) -> void:
-	for child in set_container.get_children():
-		if child.set_data.set_number == set_data.set_number:
-			child.call_deferred(\"update_data\", set_data)
-			break
-
-
-func _update_container_height():
-	var exercise_sets = session_model.get_sets_for_exercise(exercise_idx)
-	main_control.custom_minimum_size.y = exercise_sets.size() * ROW_HEIGHT + ADD_BUTTON_HEIGHT + 35
-
+	print(\"		ExerciseRow: init idx =\", idx)
+	
+	## CREATE SETS
+	# sets[ exercise_idx ] -> returns array with sets
+	var exercise_sets = session_model.sets[exercise_idx]
+	for set_idx in range(exercise_sets.size()):
+		var set_row = EXERCISE_SESSION_ROW_SET_SCENE.instantiate()
+		set_row.initialize(session_model, set_idx, exercise_idx)
+		print(\"				ExerciseRow: set_idx = \", set_idx, \"  Ex_idx: \", exercise_idx)
+		set_rows.append(set_row)  # Store the row in array
 
 # ========================
-# ACTIONS
+# SIGNAL CONNECTIONS
 # ========================
-func add_set(weight: float, reps: int) -> void:
-	print(\"ExerciseRow\", exercise_idx, \": add_set called\")
-	session_model.add_set(
-		exercise_idx,
-		weight,
-		reps,
-		int(Time.get_unix_time_from_system())
-	)
+func _connect_signals():
+	session_model.set_added.connect(_on_set_added)
+	session_model.set_removed.connect(_on_set_removed)
+	session_model.exercise_changed.connect(_on_exercise_changed)
+	
+	# Connect to the node_ready signal
+	node_ready.connect(_on_node_ready)
+
+# ========================
+# NODE READY HANDLER
+# ========================
+func _on_node_ready():
+	# Add all stored set rows as children to set_container
+	for set_row in set_rows:
+		set_container.add_child(set_row)
+		# Adjust conteiner size
+		EXERCISE_ROW_HEIGHT = EXERCISE_ROW_HEIGHT + ROW_HEIGHT
+	# At the end of VC add button
+	var add_button = ADD_SET_ROW_BUTTON_SCENE.instantiate()
+	add_button.initialize(session_model,exercise_idx)
+	set_container.add_child( add_button )
+	
+	main_control.custom_minimum_size.y = EXERCISE_ROW_HEIGHT + ADD_BUTTON_HEIGHT + 30
+
+# ========================
+# SIGNAL HANDLERS
+# ========================
+func _on_set_added(idx, set_res):
+	# Only handle sets for this exercise
+	if idx != exercise_idx:
+		return
+	
+	var set_row = EXERCISE_SESSION_ROW_SET_SCENE.instantiate()
+	# Connect to the set_row's node_ready signal
+	set_row.set_initialized.connect(_on_new_set_row_ready)
+	set_row.initialize(session_model, set_res.set_number-1, idx)
+	
+	set_rows.append(set_row)
+	
+
+func _on_new_set_row_ready():
+	await get_tree().create_timer(0.1).timeout # Wait for set to be ready ## TODO: Some better system, this might not work on slower stuff
+	
+	var new_row = set_rows[-1]
+	
+	# Find the add button (assuming it's the last child)
+	var add_button = set_container.get_child(set_container.get_child_count() - 1)
+	
+	# Insert the new row before the add button
+	set_container.add_child(new_row)
+	set_container.move_child(new_row, set_container.get_child_count() - 2)  # Move to position before add button
+	
+	# Update the height
+	EXERCISE_ROW_HEIGHT = EXERCISE_ROW_HEIGHT + ROW_HEIGHT
+	main_control.custom_minimum_size.y = EXERCISE_ROW_HEIGHT + ADD_BUTTON_HEIGHT + 30
+
+
+func _on_set_removed(idx, set_number):
+	pass
+
+
+func _on_exercise_changed(idx):
+	pass
 "
 
 [node name="ExerciseSessionRow" type="Control"]

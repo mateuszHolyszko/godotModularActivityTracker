@@ -1,21 +1,23 @@
-[gd_scene load_steps=8 format=3 uid="uid://ci4tjfpx77sfm"]
+[gd_scene load_steps=6 format=3 uid="uid://ci4tjfpx77sfm"]
 
 [ext_resource type="Theme" uid="uid://f6n2yykmqd16" path="res://assets/style/theme.tres" id="1_svj02"]
 [ext_resource type="Script" path="res://scenes/elements/valueInput/ValueInput.gd" id="2_e07u2"]
-[ext_resource type="Texture2D" uid="uid://ckxu85xwh7omx" path="res://assets/icons/add-box-svgrepo-com.svg" id="3_symoo"]
 
 [sub_resource type="GDScript" id="GDScript_aww8w"]
 script/source = "extends Control
 
-signal data_loaded  # emitted when UI is fully initialized
+signal node_ready 
+signal set_initialized
 
 # --------------------
 # DATA
 # --------------------
 var session_model: SessionModel
 var exercise_idx: int
+var set_idx: int
 var set_data: ExerciseSetResource
 var previous_set: ExerciseSetResource
+var edited_flag : bool = 0 # Use this flag when saving session (discard sets that havent been edited)
 
 # --------------------
 # UI NODES
@@ -26,122 +28,69 @@ var previous_set: ExerciseSetResource
 @onready var value_input_weight    = $Panel/HC/MainPanel/VC/WeightPanel/HC/InputWeightPanel/ValueInputWeight
 @onready var value_input_reps      = $Panel/HC/MainPanel/VC/RepsPanel/HC/InputRepsPanel/ValueInputReps
 @onready var set_num_label         = $Panel/HC/SetNumPanel/HC/SetNumLabel
-@onready var add_set_button        = $AddSetButton
 
-var _ui_initialized: bool = false
+func _ready():
+	# Emit node_ready signal at the end of _ready
+	node_ready.emit()
+
 
 # ========================
-# DATA ONLY: setup (safe to call deferred)
+# INIT
 # ========================
-func setup(set: ExerciseSetResource, model: SessionModel, idx: int) -> void:
+func initialize(model: SessionModel, idx: int, exercise_idx: int):
 	session_model = model
-	exercise_idx = idx
-	set_data = set
-	print(\"RowSet: setup called for set\", set_data.set_number)
-
-	if _ui_initialized:
-		_initialize_ui()
-
-
-# ========================
-# READY
-# ========================
-func _ready() -> void:
-	_ui_initialized = true
-	_connect_signals()
+	set_idx = idx
+	self.exercise_idx = exercise_idx
 	
-	# Initialize UI if setup() was already called
-	if set_data:
-		_initialize_ui()
-	# Otherwise setup() will call _initialize_ui() later
-	print(\"RowSet: ready (UI nodes initialized)\")
-
+	previous_set = session_model.sets[exercise_idx][set_idx]
+	print(\"				Retrived Set for set \",set_idx,\" R: \",previous_set.reps,\" W: \",previous_set.weight)
+	
+	_connect_signals()
+	set_initialized.emit()
 
 # ========================
 # SIGNALS
 # ========================
 func _connect_signals():
-	if session_model:
-		session_model.set_added.connect(_on_set_changed)
-		session_model.set_removed.connect(_on_set_changed)
-		session_model.set_edited.connect(_on_set_edited)
+	session_model.set_added.connect(_on_set_changed)
+	session_model.set_removed.connect(_on_set_changed)
+	session_model.set_edited.connect(_on_set_edited)
+	
+	# Connect to the node_ready signal
+	node_ready.connect(_on_node_ready)
 
 
 # ========================
-# UI INITIALIZATION
+# NODE READY HANDLER
 # ========================
-func _initialize_ui() -> void:
-	if not set_data:
-		return  # safety
-
-	# set labels & inputs
-	set_num_label.text = str(set_data.set_number)
-	_load_previous_set()
-	_apply_current_values()
-	_refresh_add_button_visibility()
-
+func _on_node_ready():
+	# Set Labels
+	set_num_label.text = str(set_idx + 1)
+	previous_weight_label.text = str(previous_set.weight)
+	previous_reps_label.text = str(previous_set.reps)
+	
+	# Set valueInputs to previous set values
+	value_input_weight.value = previous_set.weight
+	value_input_reps.value   = previous_set.reps
+	
 	# connect inputs/buttons
 	value_input_weight.value_confirmed.connect(_on_weight_changed)
 	value_input_reps.value_confirmed.connect(_on_reps_changed)
-	add_set_button.pressed.connect(_on_add_set_pressed)
-
-	# emit signal for any parent needing UI-ready notification
-	data_loaded.emit()
-	#print(\"RowSet: UI initialized for set\", set_data.set_number)
-
-
-func _load_previous_set() -> void:
-	var previous_sets := SessionManager.find_most_recent_sets(set_data.exercise)
-
-	previous_set = null
-	for s in previous_sets:
-		if s.set_number == set_data.set_number:
-			previous_set = s
-			break
-
-	if previous_set != null:
-		previous_weight_label.text = str(previous_set.weight)
-		previous_reps_label.text   = str(previous_set.reps)
-	else:
-		previous_weight_label.text = \"-\"
-		previous_reps_label.text   = \"-\"
-		
+	
 	# Make set semi transparent to indicate it has not been edited yet
 	set_root.modulate.a = 0.7  # Semi-transparent
-
-
-func _apply_current_values() -> void:
-	value_input_weight.value = set_data.weight
-	value_input_reps.value   = set_data.reps
-
+	
 
 # ========================
 # SIGNAL HANDLERS
 # ========================
 func _on_set_changed(idx, _a = null) -> void:
-	if idx != exercise_idx:
-		return
-	_refresh_add_button_visibility()
+	pass
 	
 
 
 func _on_set_edited(idx, set_number, updated_set) -> void:
-	if idx != exercise_idx:
-		return
-	if set_number != set_data.set_number:
-		return
-	set_data = updated_set
-	_apply_current_values()
-	
-
-
-# ========================
-# UI LOGIC
-# ========================
-func _refresh_add_button_visibility() -> void:
-	var total_sets: int = session_model.get_sets_for_exercise(exercise_idx).size()
-	add_set_button.visible = (set_data.set_number == total_sets)
-	print(\"RowSet\", set_data.set_number, \": add button visible =\", add_set_button.visible)
+	pass
 
 
 # ========================
@@ -150,99 +99,27 @@ func _refresh_add_button_visibility() -> void:
 func _on_weight_changed(value) -> void:
 	session_model.edit_set(
 		exercise_idx,
-		set_data.set_number,
+		set_idx,
 		value,
 		value_input_reps.value
 	)
+	# Make set opaqe to indicate it has been edited 
+	set_root.modulate.a = 1
+	# Switch flag
+	edited_flag = 1
 
 
 func _on_reps_changed(value) -> void:
 	session_model.edit_set(
 		exercise_idx,
-		set_data.set_number,
+		set_idx,
 		value_input_weight.value,
 		value
 	)
-
-
-func _on_add_set_pressed() -> void:
-	session_model.add_set(
-		exercise_idx,
-		value_input_weight.value,
-		value_input_reps.value,
-		int(Time.get_unix_time_from_system())
-	)
-
-func update_data(new_set: ExerciseSetResource) -> void:
-	set_data = new_set
-	if _ui_initialized:
-		_apply_current_values()
-		_refresh_add_button_visibility()
-		
-		# Return to fully opaque to indicate the set has been edited
-		set_root.modulate.a = 1  # fully opaque
-		
-		# set_data.timestamp == 0 means that the value is from set history, not inputed in this session
-		# Check if timestamp is 0 -> modulate transparency
-		#if set_data.timestamp == 0:
-		#	set_root.modulate.a = 0.7  # Semi-transparent
-		#else:
-		#	set_root.modulate.a = 1.0  # Fully opaque
-"
-
-[sub_resource type="GDScript" id="GDScript_vch07"]
-script/source = "extends Panel
-
-@onready var root = $\"../../..\"
-@onready var label = $HC/Label
-@onready var set_num_label = $HC/SetNumLabel
-
-func _ready():
-	# Wait one frame to ensure all nodes are properly set up
-	call_deferred(\"_try_connect_signal\")
-
-func _try_connect_signal():
-	# Check if root is valid now
-	if root == null:
-		print(\"Root is still null, will retry...\")
-		await get_tree().create_timer(0.1).timeout
-		_try_connect_signal()
-		return
-	
-	# Now root should be valid
-	if root.has_signal(\"data_loaded\"):
-		if not root.data_loaded.is_connected(_on_data_loaded):
-			root.data_loaded.connect(_on_data_loaded)
-			#print(\"Successfully connected to data_loaded signal\")
-	else:
-		print(\"data_loaded signal not found on root\")
-
-func _on_data_loaded():
-	#print(\"data_loaded signal received, applying styles\")
-	
-	# Double-check that all nodes are valid
-	if root == null or root.set_data == null or root.set_data.exercise == null:
-		print(\"Error: root or its data is null\")
-		return
-	
-	var exercise = root.set_data.exercise
-	
-	var style = StyleBoxFlat.new()
-	style.bg_color = MuscleData.MUSCLE_COLORS.get(exercise.target_muscle, Color.WHITE)
-	style.set_border_width_all(2)  
-	style.border_color = Color.WHITE
-	
-	self.add_theme_stylebox_override(\"normal\", style)
-	self.add_theme_stylebox_override(\"hover\", style)
-	self.add_theme_stylebox_override(\"pressed\", style)
-	
-	# Check if label and set_num_label are valid
-	if label:
-		label.add_theme_color_override(\"font_color\", Color.BLACK)
-	if set_num_label:
-		set_num_label.add_theme_color_override(\"font_color\", Color.BLACK)
-	
-	add_theme_stylebox_override(\"panel\", style)
+	# Make set opaqe to indicate it has been edited 
+	set_root.modulate.a = 1
+	# Switch flag
+	edited_flag = 1
 "
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_siyap"]
@@ -294,7 +171,6 @@ modulate = Color(1, 1, 1, 0.607843)
 custom_minimum_size = Vector2(100, 0)
 layout_mode = 2
 size_flags_stretch_ratio = 0.8
-script = SubResource("GDScript_vch07")
 
 [node name="HC" type="HBoxContainer" parent="Panel/HC/SetNumPanel"]
 layout_mode = 1
@@ -360,7 +236,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_font_sizes/font_size = 28
-text = "Weight [Kg]:"
+text = "Weight[Kg]"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -401,7 +277,7 @@ theme_override_colors/font_color = Color(0.691357, 0.691357, 0.691357, 0.784314)
 theme_override_colors/font_shadow_color = Color(0.691357, 0.691357, 0.691357, 0.784314)
 theme_override_colors/font_outline_color = Color(0.691357, 0.691357, 0.691357, 0.784314)
 theme_override_font_sizes/font_size = 20
-text = "Previous Weight"
+text = "Last Weight"
 horizontal_alignment = 1
 
 [node name="PreviousWeightLabel" type="Label" parent="Panel/HC/MainPanel/VC/WeightPanel/HC/PreviousWeightPanel/VC"]
@@ -439,7 +315,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_font_sizes/font_size = 28
-text = "Reps :"
+text = "Reps"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -480,7 +356,7 @@ theme_override_colors/font_color = Color(0.691357, 0.691357, 0.691357, 0.784314)
 theme_override_colors/font_shadow_color = Color(0.691357, 0.691357, 0.691357, 0.784314)
 theme_override_colors/font_outline_color = Color(0.691357, 0.691357, 0.691357, 0.784314)
 theme_override_font_sizes/font_size = 20
-text = "Previous Reps"
+text = "Last Reps"
 horizontal_alignment = 1
 
 [node name="PreviousRepsLabel" type="Label" parent="Panel/HC/MainPanel/VC/RepsPanel/HC/PreviousRepsPanel/VC"]
@@ -491,17 +367,3 @@ theme_override_colors/font_outline_color = Color(0.691357, 0.691357, 0.691357, 0
 theme_override_font_sizes/font_size = 20
 text = "0"
 horizontal_alignment = 1
-
-[node name="AddSetButton" type="Button" parent="."]
-custom_minimum_size = Vector2(0, 25)
-layout_mode = 1
-anchors_preset = -1
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_bottom = 25.0
-grow_horizontal = 2
-theme = ExtResource("1_svj02")
-icon = ExtResource("3_symoo")
-icon_alignment = 1
-expand_icon = true

@@ -76,7 +76,7 @@ exercise = SubResource("Resource_x32b4")
 [resource]
 script = ExtResource("1_5p3tc")
 id = "1773578472.869"
-name = "PULL DAY"
+name = "PULL"
 user = ExtResource("2_3y28f")
 entries = Array[ExtResource("2_ha7q7")]([SubResource("Resource_dmlgm"), SubResource("Resource_31ltg"), SubResource("Resource_vnjfk"), SubResource("Resource_qqtw5")])
 supersets = Array[Resource("res://db/scripts/hyperthropyProgram/program_superset.gd")]([])
