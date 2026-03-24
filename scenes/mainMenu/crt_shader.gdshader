@@ -37,23 +37,6 @@ void fragment(){
     // === SAMPLE IMAGE ===
     if (inside > 0.5){
 
-        // VHS jitter
-        float rowIndex = floor(uv0.y * pixel_height);
-        float tStep = floor(TIME * 10.0);
-        vec2 seed = vec2(rowIndex, tStep);
-
-        if (rand(seed) < 0.02){
-            float dir = rand(seed + 10.0) < 0.5 ? -1.0 : 1.0;
-            uv0.x += dir / pixel_width;
-        }
-
-        // glitch
-        if (rand(vec2(floor(TIME * 12.0),0.0)) > 0.95){
-            float glitch_y = step(0.3, fract(uv0.y * 10.0));
-            float glitch_offset = (rand(vec2(TIME,uv0.y)) - 0.5) * 0.2 * intensity;
-            uv0.x += glitch_offset * glitch_y;
-        }
-
         // chromatic aberration
         float shift = 0.006 * intensity;
 
@@ -64,7 +47,7 @@ void fragment(){
         color = vec3(r,g,b);
 
         // noise
-        float noise = (rand(uv0 * TIME) - 0.5) * 0.08 * intensity;
+        float noise = (rand(uv0 * TIME) - 0.5) * 0.8 * intensity;
         color += noise;
 
         // scanlines

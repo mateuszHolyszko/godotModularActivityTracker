@@ -42,7 +42,7 @@ func _init(program: HypertrophyProgramResource):
 	exercises.clear()
 	sets.clear()
 
-	for entry in program.entries:
+	for entry in program.get_sorted_entries():
 		var exercise = entry.exercise
 		exercises.append(exercise)
 		sets.append([]) # Initialize empty sets for this exercise
@@ -193,6 +193,34 @@ func get_sets_for_exercise(exercise_idx: int) -> Array:
 
 func change_exercise(exercise_idx: int, new_exercise):
 	exercises[exercise_idx] = new_exercise
+
+	# Find most recent sets for the new exercise, similar to _init
+	var history: Array = SessionManager.find_most_recent_sets(new_exercise)
+	var new_sets := []
+	for historic_set in history:
+		var s := ExerciseSetResource.new()
+		s.session = session_resource
+		s.exercise = new_exercise
+		s.set_number = historic_set.set_number
+		s.weight = historic_set.weight
+		s.reps = historic_set.reps
+		s.timestamp = 0
+		new_sets.append(s)
+
+	# If no history, append an extra set with timestamp = now, weight = 0, reps = 0
+	if history.is_empty():
+		var now = Time.get_unix_time_from_system()
+		var extra_set := ExerciseSetResource.new()
+		extra_set.session = session_resource
+		extra_set.exercise = new_exercise
+		extra_set.set_number = 1
+		extra_set.weight = 0.0
+		extra_set.reps = 0
+		extra_set.timestamp = now
+		new_sets.append(extra_set)
+
+	sets[exercise_idx] = new_sets
+
 	exercise_changed.emit(exercise_idx)
 
 

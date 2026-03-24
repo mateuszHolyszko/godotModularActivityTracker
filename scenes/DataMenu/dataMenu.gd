@@ -14,7 +14,7 @@ const ROW_HEIGHT = 100
 @onready var optionButtonBodyweight = $CurrentSceneContent/MC/VC/HC/FiltersPanel/HC/InputPanelBodyweight2/VC/InputBodyWeight
 
 func _ready() -> void:
-	optionButtonTarget.grab_focus()
+	#optionButtonTarget.grab_focus()
 	
 	addExButton.pressed.connect(_on_add_exercise_pressed)
 	optionButtonTarget.item_selected.connect(_on_filter_changed)

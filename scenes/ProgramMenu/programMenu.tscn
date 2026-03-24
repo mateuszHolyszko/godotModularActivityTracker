@@ -106,6 +106,9 @@ func _on_program_pressed(clicked_button: Button, program: HypertrophyProgramReso
 			btn.button_pressed = false
 		else:
 			btn.button_pressed = true  # Ensure the clicked button is toggled on
+			
+	# Play animation
+	MenuManager.play_refresh_animation()
 
 
 func _on_rename_confirmed(new_name: String, program: HypertrophyProgramResource) -> void:

@@ -1,6 +1,7 @@
 extends Node
 ## ==== USER PART =====
 signal user_changed(user: UserResource)
+signal ready_emitted
 
 var users : Array[UserResource] = []
 var current_user : UserResource = null :
@@ -15,6 +16,8 @@ func _ready():
 	DirAccess.make_dir_recursive_absolute(USER_DIR)
 	load_users()
 	load_exercises()
+	
+	ready_emitted.emit()
 
 func load_users():
 	users.clear()

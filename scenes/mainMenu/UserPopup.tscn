@@ -48,6 +48,7 @@ func _on_user_pressed(user: UserResource):
 	SessionManager.load_sessions( user )
 	
 	user_selected.emit(user)
+	MenuManager.play_refresh_animation()
 	NotificationManager.notify(\"User switched to: \\n\"+user.name)
 	popup_closed.emit()
 

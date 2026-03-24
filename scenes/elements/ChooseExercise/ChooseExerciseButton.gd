@@ -61,7 +61,7 @@ func _on_selector_closed():
 
 func _update_display_text():
 	if selected_exercise_entry and selected_exercise_entry.exercise:
-		text = "%s: %s" % [selected_target, selected_exercise_entry.exercise.name]
+		text = "%s" % [selected_exercise_entry.exercise.name]
 	else:
 		text = placeholder_text
 

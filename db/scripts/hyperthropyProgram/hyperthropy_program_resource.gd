@@ -19,9 +19,41 @@ class_name HypertrophyProgramResource
 # ---------------------------------------------------------------------------
 
 ## Returns entries sorted by their .order field.
-func get_sorted_entries() -> Array[ProgramExerciseEntry]:
+## If debug is true, prints detailed sorting information.
+func get_sorted_entries(debug: bool = false) -> Array[ProgramExerciseEntry]:
+	if debug:
+		print("=== get_sorted_entries called ===")
+		print("Total entries count: ", entries.size())
+		
+		# Print original order
+		print("Original entries order:")
+		for i in range(entries.size()):
+			var entry = entries[i]
+			var exercise_name = entry.exercise.name if entry.exercise else "NO EXERCISE"
+			print("  Index ", i, ": order=", entry.order, " - ", exercise_name)
+	
 	var sorted: Array[ProgramExerciseEntry] = entries.duplicate()
 	sorted.sort_custom(func(a, b): return a.order < b.order)
+	
+	if debug:
+		# Print sorted order
+		print("Sorted entries order:")
+		for i in range(sorted.size()):
+			var entry = sorted[i]
+			var exercise_name = entry.exercise.name if entry.exercise else "NO EXERCISE"
+			print("  Position ", i, ": order=", entry.order, " - ", exercise_name)
+		
+		# Verify sorting worked
+		var is_sorted = true
+		for i in range(sorted.size() - 1):
+			if sorted[i].order > sorted[i+1].order:
+				is_sorted = false
+				print("  WARNING: Sorting issue detected at position ", i, 
+					  " (", sorted[i].order, " > ", sorted[i+1].order, ")")
+		
+		print("Sorting successful: ", is_sorted)
+		print("===============================")
+	
 	return sorted
 
 

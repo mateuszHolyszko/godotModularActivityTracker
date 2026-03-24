@@ -1,13 +1,102 @@
-[gd_scene load_steps=10 format=3 uid="uid://dnks4hnqxbj6s"]
+[gd_scene load_steps=20 format=3 uid="uid://dnks4hnqxbj6s"]
 
 [ext_resource type="Script" path="res://scenes/mainMenu/main.gd" id="1_2ilo5"]
 [ext_resource type="Theme" uid="uid://f6n2yykmqd16" path="res://assets/style/theme.tres" id="2_ujpk0"]
 [ext_resource type="Script" path="res://scenes/mainMenu/NavBar.gd" id="3_rha28"]
-[ext_resource type="Shader" path="res://scenes/mainMenu/shader.gdshader" id="4_an45y"]
+[ext_resource type="Shader" path="res://scenes/mainMenu/crt_shader.gdshader" id="4_an45y"]
 [ext_resource type="Script" path="res://scenes/mainMenu/NotificationPanel.gd" id="4_iyhic"]
+[ext_resource type="Texture2D" uid="uid://dsdhkdibtavyr" path="res://assets/icons/battery-2-svgrepo-com.svg" id="4_vejc8"]
+[ext_resource type="Texture2D" uid="uid://bqrkgsajufsu" path="res://assets/icons/sliders-2-svgrepo-com.svg" id="4_ybce0"]
+[ext_resource type="Texture2D" uid="uid://dmgwl6rdqlrw2" path="res://assets/icons/clock-svgrepo-com.svg" id="5_1n0l3"]
+[ext_resource type="Texture2D" uid="uid://cns5kxnuyberh" path="res://assets/icons/user-svgrepo-com.svg" id="5_go37j"]
 [ext_resource type="PackedScene" uid="uid://yr815312l8g0" path="res://scenes/elements/notification/NotificationItem.tscn" id="5_n4hrt"]
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_8y7tj"]
+bg_color = Color(1, 1, 1, 0.215686)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_kmk4m"]
+bg_color = Color(0.0784314, 0.0784314, 0.0784314, 1)
+border_width_left = 2
+border_width_right = 2
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_tjgtk"]
+
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_tbolm"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_yq433"]
+
+[sub_resource type="GDScript" id="GDScript_q2hos"]
+script/source = "extends CanvasLayer
+
+
+# Called when the node enters the scene tree for the first time.
+func _ready() -> void:
+	# This fixes Popup elements not geting shaders
+	layer=1025
+"
+
+[sub_resource type="GDScript" id="GDScript_lg21n"]
+script/source = "extends ColorRect
+
+@export var fade_out_time := 0.2
+@export var fade_in_time := 0.25
+
+var tween: Tween
+
+signal fade_out_completed
+signal fade_in_completed
+
+func _ready():
+	color = Color.BLACK
+	modulate.a = 0.0
+	set_anchors_preset(Control.PRESET_FULL_RECT)
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+func fade_out():
+	if tween:
+		tween.kill()
+	
+	mouse_filter = Control.MOUSE_FILTER_STOP
+	
+	tween = create_tween()
+	tween.tween_property(self, \"modulate:a\", 1.0, fade_out_time)
+	tween.finished.connect(_on_fade_out_finished)
+
+func _on_fade_out_finished():
+	fade_out_completed.emit()
+
+func fade_in():
+	if tween:
+		tween.kill()
+	
+	tween = create_tween()
+	tween.tween_property(self, \"modulate:a\", 0.0, fade_in_time)
+	tween.finished.connect(_on_fade_in_finished)
+
+func _on_fade_in_finished():
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	fade_in_completed.emit()
+	
+func play_refresh_animation():
+	if tween:
+		tween.kill()
+	
+	mouse_filter = Control.MOUSE_FILTER_STOP
+	
+	# Start fully black
+	modulate.a = 1.0
+	
+	tween = create_tween()
+	tween.tween_property(self, \"modulate:a\", 0.0, fade_in_time * 2)
+	tween.finished.connect(func():
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+	)
+	
+"
 
 [sub_resource type="GDScript" id="GDScript_dyjcy"]
 script/source = "extends CanvasLayer
@@ -69,7 +158,10 @@ custom_minimum_size = Vector2(0, 60)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 4
-theme_override_font_sizes/font_size = 28
+size_flags_stretch_ratio = 0.64
+theme_override_font_sizes/font_size = 26
+theme_override_styles/focus = SubResource("StyleBoxFlat_8y7tj")
+toggle_mode = true
 text = "Overview"
 
 [node name="Session" type="Button" parent="NavBar/HBoxContainer"]
@@ -77,7 +169,10 @@ custom_minimum_size = Vector2(0, 60)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 4
-theme_override_font_sizes/font_size = 28
+size_flags_stretch_ratio = 0.64
+theme_override_font_sizes/font_size = 26
+theme_override_styles/focus = SubResource("StyleBoxFlat_8y7tj")
+toggle_mode = true
 text = "Session"
 
 [node name="Program" type="Button" parent="NavBar/HBoxContainer"]
@@ -85,7 +180,10 @@ custom_minimum_size = Vector2(0, 60)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 4
-theme_override_font_sizes/font_size = 28
+size_flags_stretch_ratio = 0.64
+theme_override_font_sizes/font_size = 26
+theme_override_styles/focus = SubResource("StyleBoxFlat_8y7tj")
+toggle_mode = true
 text = "Program"
 
 [node name="Data" type="Button" parent="NavBar/HBoxContainer"]
@@ -93,63 +191,97 @@ custom_minimum_size = Vector2(0, 60)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 4
-theme_override_font_sizes/font_size = 28
+size_flags_stretch_ratio = 0.64
+theme_override_font_sizes/font_size = 26
+theme_override_styles/focus = SubResource("StyleBoxFlat_8y7tj")
+toggle_mode = true
 text = "Data"
 
-[node name="HSplitContainer" type="HSplitContainer" parent="NavBar/HBoxContainer"]
-layout_mode = 2
-theme_override_constants/separation = 50
-theme_override_constants/minimum_grab_thickness = 50
-
-[node name="CatWidget" type="Panel" parent="NavBar/HBoxContainer"]
+[node name="ModuleSelect" type="Panel" parent="NavBar/HBoxContainer"]
 custom_minimum_size = Vector2(82, 0)
 layout_mode = 2
 size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.8
 theme = ExtResource("2_ujpk0")
+theme_override_styles/panel = SubResource("StyleBoxFlat_kmk4m")
 
-[node name="HSplitContainer2" type="HSplitContainer" parent="NavBar/HBoxContainer"]
+[node name="SettingsBattery" type="Panel" parent="NavBar/HBoxContainer"]
+custom_minimum_size = Vector2(35, 0)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxEmpty_tjgtk")
+
+[node name="VC" type="VBoxContainer" parent="NavBar/HBoxContainer/SettingsBattery"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+alignment = 1
+
+[node name="BatterySVG" type="TextureRect" parent="NavBar/HBoxContainer/SettingsBattery/VC"]
+custom_minimum_size = Vector2(0, 35)
+layout_mode = 2
+texture = ExtResource("4_vejc8")
+expand_mode = 4
+stretch_mode = 5
+
+[node name="SettingButton" type="Button" parent="NavBar/HBoxContainer/SettingsBattery/VC"]
+custom_minimum_size = Vector2(0, 35)
+layout_mode = 2
+icon = ExtResource("4_ybce0")
+expand_icon = true
+
+[node name="HSplitContainer5" type="HSplitContainer" parent="NavBar/HBoxContainer"]
+custom_minimum_size = Vector2(10, 0)
 layout_mode = 2
 theme_override_constants/separation = 50
 theme_override_constants/minimum_grab_thickness = 50
 
 [node name="UserSelect" type="Panel" parent="NavBar/HBoxContainer"]
-custom_minimum_size = Vector2(150, 0)
+custom_minimum_size = Vector2(125, 0)
 layout_mode = 2
 size_flags_horizontal = 3
+size_flags_stretch_ratio = 1.2
 theme = ExtResource("2_ujpk0")
 theme_override_styles/panel = SubResource("StyleBoxEmpty_tbolm")
 
-[node name="VBoxContainer" type="VBoxContainer" parent="NavBar/HBoxContainer/UserSelect"]
+[node name="MC" type="MarginContainer" parent="NavBar/HBoxContainer/UserSelect"]
 layout_mode = 1
-anchors_preset = -1
-anchor_left = 0.02
+anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_right = -2.0
 grow_horizontal = 2
 grow_vertical = 2
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="VBoxContainer" type="HBoxContainer" parent="NavBar/HBoxContainer/UserSelect/MC"]
+layout_mode = 2
 theme = ExtResource("2_ujpk0")
 alignment = 1
 
-[node name="UserLabel" type="Label" parent="NavBar/HBoxContainer/UserSelect/VBoxContainer"]
+[node name="UserButton" type="Button" parent="NavBar/HBoxContainer/UserSelect/MC/VBoxContainer"]
 layout_mode = 2
-size_flags_vertical = 1
-theme_override_font_sizes/font_size = 23
-text = "Selected User"
-horizontal_alignment = 1
-
-[node name="HSeparator" type="HSeparator" parent="NavBar/HBoxContainer/UserSelect/VBoxContainer"]
-layout_mode = 2
-size_flags_vertical = 0
-
-[node name="UserButton" type="Button" parent="NavBar/HBoxContainer/UserSelect/VBoxContainer"]
-layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
 text = "None"
+
+[node name="UserSVG" type="TextureRect" parent="NavBar/HBoxContainer/UserSelect/MC/VBoxContainer"]
+custom_minimum_size = Vector2(35, 35)
+layout_mode = 2
+size_flags_horizontal = 6
+size_flags_vertical = 4
+size_flags_stretch_ratio = 0.25
+texture = ExtResource("5_go37j")
+expand_mode = 2
 
 [node name="Clock" type="Panel" parent="NavBar/HBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.8
 theme = ExtResource("2_ujpk0")
+theme_override_styles/panel = SubResource("StyleBoxEmpty_yq433")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="NavBar/HBoxContainer/Clock"]
 layout_mode = 1
@@ -170,11 +302,26 @@ horizontal_alignment = 1
 [node name="HSeparator" type="HSeparator" parent="NavBar/HBoxContainer/Clock/VBoxContainer"]
 layout_mode = 2
 
-[node name="Time" type="Label" parent="NavBar/HBoxContainer/Clock/VBoxContainer"]
+[node name="HC" type="HBoxContainer" parent="NavBar/HBoxContainer/Clock/VBoxContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="ClockSVG" type="TextureRect" parent="NavBar/HBoxContainer/Clock/VBoxContainer/HC"]
+layout_mode = 2
+texture = ExtResource("5_1n0l3")
+expand_mode = 2
+stretch_mode = 4
+
+[node name="Time" type="Label" parent="NavBar/HBoxContainer/Clock/VBoxContainer/HC"]
 layout_mode = 2
 size_flags_vertical = 1
 text = "13:22"
 horizontal_alignment = 1
+
+[node name="HSplitContainer4" type="HSplitContainer" parent="NavBar/HBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 50
+theme_override_constants/minimum_grab_thickness = 50
 
 [node name="CurrentSceneContent" type="Panel" parent="."]
 layout_mode = 1
@@ -184,18 +331,34 @@ anchor_bottom = 0.752
 offset_bottom = 37.04
 theme = ExtResource("2_ujpk0")
 
+[node name="MenuTransitionLayer" type="CanvasLayer" parent="."]
+script = SubResource("GDScript_q2hos")
+
+[node name="TransitionRect" type="ColorRect" parent="MenuTransitionLayer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 2.0
+offset_top = 2.0
+offset_right = -2.0
+offset_bottom = -82.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 1)
+script = SubResource("GDScript_lg21n")
+
 [node name="PopupPanel" type="Panel" parent="."]
 visible = false
 layout_mode = 1
 anchors_preset = -1
-anchor_left = 0.326
-anchor_top = 0.208
-anchor_right = 0.701
-anchor_bottom = 0.792
-offset_left = 0.199982
-offset_top = 0.159996
-offset_right = 0.199951
-offset_bottom = -0.160034
+anchor_left = 0.59
+anchor_top = 0.227
+anchor_right = 0.86
+anchor_bottom = 0.81
+offset_left = -3.05176e-05
+offset_top = 0.0399933
+offset_bottom = 0.199982
 grow_horizontal = 2
 grow_vertical = 2
 theme = ExtResource("2_ujpk0")
@@ -204,17 +367,18 @@ theme = ExtResource("2_ujpk0")
 layout_mode = 1
 anchors_preset = -1
 anchor_left = 0.484
-anchor_top = 0.033
+anchor_top = 0.14
 anchor_right = 0.984
-anchor_bottom = 0.656
+anchor_bottom = 0.762
 offset_left = -0.200012
-offset_top = 0.16
+offset_top = -0.199997
 offset_right = -0.200073
-offset_bottom = 0.119995
+offset_bottom = 0.23999
 grow_horizontal = 2
 mouse_filter = 2
 theme = ExtResource("2_ujpk0")
 theme_override_constants/separation = 5
+alignment = 2
 script = ExtResource("4_iyhic")
 notification_scene = ExtResource("5_n4hrt")
 
@@ -222,7 +386,7 @@ notification_scene = ExtResource("5_n4hrt")
 layer = 128
 script = SubResource("GDScript_dyjcy")
 
-[node name="PanelShader" type="ColorRect" parent="CanvasLayer"]
+[node name="CRTPass" type="ColorRect" parent="CanvasLayer"]
 material = SubResource("ShaderMaterial_fqfyy")
 anchors_preset = 15
 anchor_right = 1.0
@@ -237,4 +401,4 @@ color = Color(0.0784314, 0.0784314, 0.0784314, 1)
 [connection signal="pressed" from="NavBar/HBoxContainer/Session" to="NavBar" method="_on_session_pressed"]
 [connection signal="pressed" from="NavBar/HBoxContainer/Program" to="NavBar" method="_on_program_pressed"]
 [connection signal="pressed" from="NavBar/HBoxContainer/Data" to="NavBar" method="_on_data_pressed"]
-[connection signal="pressed" from="NavBar/HBoxContainer/UserSelect/VBoxContainer/UserButton" to="." method="_on_user_button_pressed"]
+[connection signal="pressed" from="NavBar/HBoxContainer/UserSelect/MC/VBoxContainer/UserButton" to="." method="_on_user_button_pressed"]

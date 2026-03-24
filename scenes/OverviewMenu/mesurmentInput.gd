@@ -144,4 +144,4 @@ func _on_save_button_pressed():
 
 
 func _on_exit_button_pressed():
-	MenuManager.change_menu("res://scenes/OverviewMenu/overview.tscn")
+	MenuManager.change_menu("overview_menu")

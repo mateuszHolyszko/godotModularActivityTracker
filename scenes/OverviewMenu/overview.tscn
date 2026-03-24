@@ -48,6 +48,7 @@ layout_mode = 2
 [node name="VBoxLeft" type="VBoxContainer" parent="CurrentSceneContent/MarginContainer/HBoxContainer"]
 custom_minimum_size = Vector2(280, 0)
 layout_mode = 2
+size_flags_horizontal = 3
 theme = ExtResource("1_vq7bv")
 alignment = 1
 
@@ -56,43 +57,48 @@ layout_mode = 2
 size_flags_vertical = 3
 theme = ExtResource("1_vq7bv")
 
-[node name="SubViewportContainer" type="SubViewportContainer" parent="CurrentSceneContent/MarginContainer/HBoxContainer/VBoxLeft/ViewportPanel"]
+[node name="MC" type="MarginContainer" parent="CurrentSceneContent/MarginContainer/HBoxContainer/VBoxLeft/ViewportPanel"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_top = 6.0
-offset_bottom = -2.0
 grow_horizontal = 2
 grow_vertical = 2
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="SubViewportContainer" type="SubViewportContainer" parent="CurrentSceneContent/MarginContainer/HBoxContainer/VBoxLeft/ViewportPanel/MC"]
+layout_mode = 2
 stretch = true
 
-[node name="SubViewport" type="SubViewport" parent="CurrentSceneContent/MarginContainer/HBoxContainer/VBoxLeft/ViewportPanel/SubViewportContainer"]
+[node name="SubViewport" type="SubViewport" parent="CurrentSceneContent/MarginContainer/HBoxContainer/VBoxLeft/ViewportPanel/MC/SubViewportContainer"]
 transparent_bg = true
 handle_input_locally = false
-size = Vector2i(2, 2)
+size = Vector2i(298, 374)
 render_target_update_mode = 4
 
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="CurrentSceneContent/MarginContainer/HBoxContainer/VBoxLeft/ViewportPanel/SubViewportContainer/SubViewport"]
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="CurrentSceneContent/MarginContainer/HBoxContainer/VBoxLeft/ViewportPanel/MC/SubViewportContainer/SubViewport"]
 transform = Transform3D(0.523719, 0, 0.851891, 0, 1, 0, -0.851891, 0, 0.523719, -46.4063, -51.0319, 129.059)
 sky_mode = 1
 
-[node name="Camera3D" type="Camera3D" parent="CurrentSceneContent/MarginContainer/HBoxContainer/VBoxLeft/ViewportPanel/SubViewportContainer/SubViewport"]
+[node name="Camera3D" type="Camera3D" parent="CurrentSceneContent/MarginContainer/HBoxContainer/VBoxLeft/ViewportPanel/MC/SubViewportContainer/SubViewport"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.148315, 49.1016, 76.5099)
 projection = 1
 size = 100.0
 
-[node name="CameraTop" type="Marker3D" parent="CurrentSceneContent/MarginContainer/HBoxContainer/VBoxLeft/ViewportPanel/SubViewportContainer/SubViewport"]
-transform = Transform3D(1, 0, -1.74846e-07, 0, 1, 0, 1.74846e-07, 0, 1, 0, 48.8467, 75.895)
+[node name="CameraTop" type="Marker3D" parent="CurrentSceneContent/MarginContainer/HBoxContainer/VBoxLeft/ViewportPanel/MC/SubViewportContainer/SubViewport"]
+transform = Transform3D(1, 0, -1.74846e-07, 0, 1, 0, 1.74846e-07, 0, 1, 0, 44.5077, 75.895)
 
-[node name="CameraBottom" type="Marker3D" parent="CurrentSceneContent/MarginContainer/HBoxContainer/VBoxLeft/ViewportPanel/SubViewportContainer/SubViewport"]
+[node name="CameraBottom" type="Marker3D" parent="CurrentSceneContent/MarginContainer/HBoxContainer/VBoxLeft/ViewportPanel/MC/SubViewportContainer/SubViewport"]
 transform = Transform3D(1, 0, -1.74846e-07, 0, 1, 0, 1.74846e-07, 0, 1, 2.39444, -38.3111, 76.1433)
 
-[node name="MainScene" type="Node3D" parent="CurrentSceneContent/MarginContainer/HBoxContainer/VBoxLeft/ViewportPanel/SubViewportContainer/SubViewport"]
+[node name="MainScene" type="Node3D" parent="CurrentSceneContent/MarginContainer/HBoxContainer/VBoxLeft/ViewportPanel/MC/SubViewportContainer/SubViewport"]
 script = ExtResource("3_dce5v")
 
-[node name="Model" parent="CurrentSceneContent/MarginContainer/HBoxContainer/VBoxLeft/ViewportPanel/SubViewportContainer/SubViewport/MainScene" instance=ExtResource("3_no54i")]
-transform = Transform3D(0.8, 0, 0, 0, 0.8, 0, 0, 0, 0.8, -124.922, -72.8766, 0)
+[node name="Model" parent="CurrentSceneContent/MarginContainer/HBoxContainer/VBoxLeft/ViewportPanel/MC/SubViewportContainer/SubViewport/MainScene" instance=ExtResource("3_no54i")]
+transform = Transform3D(0.8, 0, 0, 0, 0.8, 0, 0, 0, 0.8, -126.062, -72.8766, 0)
 script = ExtResource("5_erngd")
 
 [node name="WeightPanel" type="Panel" parent="CurrentSceneContent/MarginContainer/HBoxContainer/VBoxLeft"]
@@ -148,12 +154,17 @@ text = "Input mesurments"
 [node name="PanelMiddle" type="Panel" parent="CurrentSceneContent/MarginContainer/HBoxContainer"]
 custom_minimum_size = Vector2(145, 0)
 layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.5
 theme = ExtResource("1_vq7bv")
 
 [node name="MarginContainer" type="MarginContainer" parent="CurrentSceneContent/MarginContainer/HBoxContainer/PanelMiddle"]
-layout_mode = 0
-offset_right = 40.0
-offset_bottom = 40.0
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 theme_override_constants/margin_left = 5
 theme_override_constants/margin_top = 5
 theme_override_constants/margin_right = 5

@@ -10,7 +10,7 @@ extends Control
 var custom_theme = preload("res://assets/style/retro_style.tres")
 
 func _ready():
-	buttonMesurments.grab_focus()
+	#buttonMesurments.grab_focus()
 	container.theme = custom_theme
 	create_muscle_buttons()
 	DataManager.user_changed.connect(_on_user_changed)
@@ -66,4 +66,4 @@ func apply_button_color(button: Button, color: Color):
 	button.add_theme_stylebox_override("normal", style)
 
 func _on_button_mesurments_pressed():
-	MenuManager.change_menu("res://scenes/OverviewMenu/mesurmentInput.tscn")
+	MenuManager.change_menu("user_mesurment_menu")

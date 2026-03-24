@@ -1,7 +1,8 @@
-[gd_scene load_steps=4 format=3 uid="uid://yr815312l8g0"]
+[gd_scene load_steps=5 format=3 uid="uid://yr815312l8g0"]
 
 [ext_resource type="Theme" uid="uid://f6n2yykmqd16" path="res://assets/style/theme.tres" id="1_msjqa"]
 [ext_resource type="Script" path="res://scenes/elements/notification/NotificationItem.gd" id="1_pyxpa"]
+[ext_resource type="Texture2D" uid="uid://dndn12f14egqu" path="res://assets/icons/warning-box-svgrepo-com.svg" id="3_py36y"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_jff3r"]
 bg_color = Color(0.0745098, 0.0745098, 0.0745098, 0.588235)
@@ -31,16 +32,29 @@ theme = ExtResource("1_msjqa")
 theme_override_styles/panel = SubResource("StyleBoxFlat_jff3r")
 script = ExtResource("1_pyxpa")
 
-[node name="Label" type="Label" parent="."]
+[node name="HC" type="HBoxContainer" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+
+[node name="Label" type="Label" parent="HC"]
+layout_mode = 2
+size_flags_horizontal = 3
 theme_override_colors/font_color = Color(1, 1, 1, 0.607843)
 theme_override_colors/font_shadow_color = Color(1, 1, 1, 0.607843)
 theme_override_colors/font_outline_color = Color(1, 1, 1, 0.607843)
 horizontal_alignment = 1
 vertical_alignment = 1
 autowrap_mode = 3
+
+[node name="TextureRect" type="TextureRect" parent="HC"]
+custom_minimum_size = Vector2(80, 80)
+layout_mode = 2
+size_flags_horizontal = 10
+size_flags_vertical = 4
+size_flags_stretch_ratio = 0.25
+texture = ExtResource("3_py36y")
+expand_mode = 4

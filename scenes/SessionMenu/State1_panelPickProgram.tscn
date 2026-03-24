@@ -1,9 +1,11 @@
-[gd_scene load_steps=6 format=3 uid="uid://dxeq81ut0lccp"]
+[gd_scene load_steps=7 format=3 uid="uid://dxeq81ut0lccp"]
 
 [ext_resource type="Theme" uid="uid://f6n2yykmqd16" path="res://assets/style/theme.tres" id="1_iwjkd"]
 [ext_resource type="Script" path="res://scenes/SessionMenu/State1_panelPickProgram.gd" id="2_bnd5e"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_ihwd6"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_og7xa"]
 
 [sub_resource type="GDScript" id="GDScript_o7vqk"]
 script/source = "extends Panel
@@ -216,20 +218,20 @@ func _create_session_item(session: HypertrophySessionResource) -> Control:
 	# Create program name label (left side)
 	var program_label = Label.new()
 	program_label.text = _get_program_name(session)
-	program_label.add_theme_font_size_override(\"font_size\", 24)
+	program_label.add_theme_font_size_override(\"font_size\", 22)
 	program_label.add_theme_color_override(\"font_color\", Color.WHITE)
-	program_label.add_theme_constant_override(\"margin_bottom\", 5)
-	program_label.add_theme_constant_override(\"margin_top\", 5)
+	program_label.add_theme_constant_override(\"margin_bottom\", 2)
+	program_label.add_theme_constant_override(\"margin_top\", 2)
 	program_label.set_horizontal_alignment(HORIZONTAL_ALIGNMENT_LEFT)
 	program_label.size_flags_horizontal = Control.SIZE_EXPAND | Control.SIZE_FILL
 	
 	# Create date label (right side)
 	var date_label = Label.new()
 	date_label.text = _format_date(session.timestamp_start)
-	date_label.add_theme_font_size_override(\"font_size\", 24)
+	date_label.add_theme_font_size_override(\"font_size\", 22)
 	date_label.add_theme_color_override(\"font_color\", Color.WHITE)
-	date_label.add_theme_constant_override(\"margin_bottom\", 5)
-	date_label.add_theme_constant_override(\"margin_top\", 5)
+	date_label.add_theme_constant_override(\"margin_bottom\", 2)
+	date_label.add_theme_constant_override(\"margin_top\", 2)
 	date_label.set_horizontal_alignment(HORIZONTAL_ALIGNMENT_RIGHT)
 	
 	# Add both labels to the container
@@ -343,10 +345,24 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Label" type="Label" parent="MC/HC/LastSessionsSummary/VC/TargetVolumePanel/VC"]
-custom_minimum_size = Vector2(0, 30)
+[node name="LabelPanel" type="Panel" parent="MC/HC/LastSessionsSummary/VC/TargetVolumePanel/VC"]
+custom_minimum_size = Vector2(0, 25)
 layout_mode = 2
 size_flags_vertical = 3
+size_flags_stretch_ratio = 0.1
+theme_override_styles/panel = SubResource("StyleBoxEmpty_og7xa")
+
+[node name="Label" type="Label" parent="MC/HC/LastSessionsSummary/VC/TargetVolumePanel/VC/LabelPanel"]
+custom_minimum_size = Vector2(0, 25)
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -132.0
+offset_right = 132.0
+offset_bottom = 29.0
+grow_horizontal = 2
+size_flags_vertical = 1
 size_flags_stretch_ratio = 0.2
 text = "Volume Summary (14 days)"
 horizontal_alignment = 1
@@ -370,10 +386,24 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Label" type="Label" parent="MC/HC/LastSessionsSummary/VC/SessionHistoryPanel/VC"]
-custom_minimum_size = Vector2(0, 30)
+[node name="LabelPanel" type="Panel" parent="MC/HC/LastSessionsSummary/VC/SessionHistoryPanel/VC"]
+custom_minimum_size = Vector2(0, 25)
 layout_mode = 2
 size_flags_vertical = 3
+size_flags_stretch_ratio = 0.1
+theme_override_styles/panel = SubResource("StyleBoxEmpty_og7xa")
+
+[node name="Label" type="Label" parent="MC/HC/LastSessionsSummary/VC/SessionHistoryPanel/VC/LabelPanel"]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -82.5
+offset_right = 82.5
+offset_bottom = 30.0
+grow_horizontal = 2
+size_flags_vertical = 1
 size_flags_stretch_ratio = 0.2
 text = "Session History"
 horizontal_alignment = 1
@@ -384,14 +414,21 @@ clip_contents = true
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="V_session_history_container" type="VBoxContainer" parent="MC/HC/LastSessionsSummary/VC/SessionHistoryPanel/VC/Panel"]
-clip_contents = true
+[node name="MC" type="MarginContainer" parent="MC/HC/LastSessionsSummary/VC/SessionHistoryPanel/VC/Panel"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="V_session_history_container" type="VBoxContainer" parent="MC/HC/LastSessionsSummary/VC/SessionHistoryPanel/VC/Panel/MC"]
+clip_contents = true
+layout_mode = 2
 size_flags_vertical = 3
 alignment = 1
 script = SubResource("GDScript_pvp2v")

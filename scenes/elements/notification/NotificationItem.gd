@@ -1,6 +1,6 @@
 extends Panel
 
-@onready var label = $Label
+@onready var label = $HC/Label
 
 func show_notification(text: String, duration: float):
 	label.text = text

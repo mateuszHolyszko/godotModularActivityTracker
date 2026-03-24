@@ -1,8 +1,9 @@
-[gd_scene load_steps=5 format=3 uid="uid://cqacmk0oq4gow"]
+[gd_scene load_steps=7 format=3 uid="uid://cqacmk0oq4gow"]
 
 [ext_resource type="Theme" uid="uid://f6n2yykmqd16" path="res://assets/style/theme.tres" id="1_1rn05"]
 [ext_resource type="ArrayMesh" uid="uid://bgavug0bmjgig" path="res://assets/models/Body35.obj" id="2_ge5eg"]
 [ext_resource type="Texture2D" uid="uid://ca382g8x3661c" path="res://assets/images/logo.png" id="3_f0pf0"]
+[ext_resource type="Script" path="res://scenes/InitMenu/LoadingPanel.gd" id="4_e8rkk"]
 
 [sub_resource type="GDScript" id="GDScript_xfebl"]
 script/source = "extends MeshInstance3D
@@ -39,6 +40,8 @@ func _process(delta):
 	# print(\"Angle: \", current_rotation_deg, \" Speed multiplier: \", current_multiplier)
 "
 
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_0wm7e"]
+
 [node name="InitMenu" type="Control"]
 layout_mode = 3
 anchors_preset = 15
@@ -66,36 +69,44 @@ grow_horizontal = 2
 grow_vertical = 2
 alignment = 1
 
-[node name="ViewportPanel" type="AspectRatioContainer" parent="CurrentSceneContent/HBoxContainer"]
+[node name="MC" type="MarginContainer" parent="CurrentSceneContent/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="ViewportPanel" type="AspectRatioContainer" parent="CurrentSceneContent/HBoxContainer/MC"]
 clip_contents = true
 layout_mode = 2
 size_flags_horizontal = 3
 theme = ExtResource("1_1rn05")
 stretch_mode = 1
 
-[node name="SubViewportContainer" type="SubViewportContainer" parent="CurrentSceneContent/HBoxContainer/ViewportPanel"]
+[node name="SubViewportContainer" type="SubViewportContainer" parent="CurrentSceneContent/HBoxContainer/MC/ViewportPanel"]
 layout_mode = 2
 stretch = true
 
-[node name="SubViewport" type="SubViewport" parent="CurrentSceneContent/HBoxContainer/ViewportPanel/SubViewportContainer"]
+[node name="SubViewport" type="SubViewport" parent="CurrentSceneContent/HBoxContainer/MC/ViewportPanel/SubViewportContainer"]
 transparent_bg = true
 handle_input_locally = false
-size = Vector2i(2, 2)
+size = Vector2i(460, 460)
 render_target_update_mode = 4
 
-[node name="Node3D" type="Node3D" parent="CurrentSceneContent/HBoxContainer/ViewportPanel/SubViewportContainer/SubViewport"]
+[node name="Node3D" type="Node3D" parent="CurrentSceneContent/HBoxContainer/MC/ViewportPanel/SubViewportContainer/SubViewport"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.923626, 0, 0)
 
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="CurrentSceneContent/HBoxContainer/ViewportPanel/SubViewportContainer/SubViewport"]
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="CurrentSceneContent/HBoxContainer/MC/ViewportPanel/SubViewportContainer/SubViewport"]
 transform = Transform3D(0.971508, 0, 0.237007, 0, 1, 0, -0.237007, 0, 0.971508, -46.4063, -26.1128, 58.7379)
 sky_mode = 1
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="CurrentSceneContent/HBoxContainer/ViewportPanel/SubViewportContainer/SubViewport"]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="CurrentSceneContent/HBoxContainer/MC/ViewportPanel/SubViewportContainer/SubViewport"]
 transform = Transform3D(0.799408, 0, 0, 0, 0.799408, 0, 0, 0, 0.799408, 0.454428, -34.6543, 4.35349)
 mesh = ExtResource("2_ge5eg")
 script = SubResource("GDScript_xfebl")
 
-[node name="Camera3D" type="Camera3D" parent="CurrentSceneContent/HBoxContainer/ViewportPanel/SubViewportContainer/SubViewport"]
+[node name="Camera3D" type="Camera3D" parent="CurrentSceneContent/HBoxContainer/MC/ViewportPanel/SubViewportContainer/SubViewport"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.85745, -3.87495, 76.5099)
 projection = 1
 size = 100.0
@@ -142,16 +153,6 @@ theme_override_constants/margin_bottom = 10
 [node name="HC" type="HBoxContainer" parent="CurrentSceneContent/HBoxContainer/InfoPanel/MarginContainer/VBoxContainer/Panel/MarginContainer"]
 layout_mode = 2
 
-[node name="AspectRatioContainer" type="AspectRatioContainer" parent="CurrentSceneContent/HBoxContainer/InfoPanel/MarginContainer/VBoxContainer/Panel/MarginContainer/HC"]
-layout_mode = 2
-size_flags_horizontal = 3
-stretch_mode = 1
-
-[node name="TextLogo" type="TextureRect" parent="CurrentSceneContent/HBoxContainer/InfoPanel/MarginContainer/VBoxContainer/Panel/MarginContainer/HC/AspectRatioContainer"]
-layout_mode = 2
-texture = ExtResource("3_f0pf0")
-expand_mode = 2
-
 [node name="Label" type="Label" parent="CurrentSceneContent/HBoxContainer/InfoPanel/MarginContainer/VBoxContainer/Panel/MarginContainer/HC"]
 layout_mode = 2
 size_flags_horizontal = 3
@@ -163,8 +164,158 @@ Engine-Godot4.2.2
 Author-Mat"
 vertical_alignment = 1
 
-[node name="GibberishGenPanel" type="Panel" parent="CurrentSceneContent/HBoxContainer/InfoPanel/MarginContainer/VBoxContainer"]
+[node name="AspectRatioContainer" type="AspectRatioContainer" parent="CurrentSceneContent/HBoxContainer/InfoPanel/MarginContainer/VBoxContainer/Panel/MarginContainer/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+stretch_mode = 1
+
+[node name="TextLogo" type="TextureRect" parent="CurrentSceneContent/HBoxContainer/InfoPanel/MarginContainer/VBoxContainer/Panel/MarginContainer/HC/AspectRatioContainer"]
+layout_mode = 2
+texture = ExtResource("3_f0pf0")
+expand_mode = 2
+
+[node name="LoadingPanel" type="Panel" parent="CurrentSceneContent/HBoxContainer/InfoPanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 3
 size_flags_stretch_ratio = 1.5
 theme = ExtResource("1_1rn05")
+script = ExtResource("4_e8rkk")
+
+[node name="MC" type="MarginContainer" parent="CurrentSceneContent/HBoxContainer/InfoPanel/MarginContainer/VBoxContainer/LoadingPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="VC" type="VBoxContainer" parent="CurrentSceneContent/HBoxContainer/InfoPanel/MarginContainer/VBoxContainer/LoadingPanel/MC"]
+layout_mode = 2
+
+[node name="OverviewPanel" type="Panel" parent="CurrentSceneContent/HBoxContainer/InfoPanel/MarginContainer/VBoxContainer/LoadingPanel/MC/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StyleBoxEmpty_0wm7e")
+
+[node name="HC" type="HBoxContainer" parent="CurrentSceneContent/HBoxContainer/InfoPanel/MarginContainer/VBoxContainer/LoadingPanel/MC/VC/OverviewPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Label" type="Label" parent="CurrentSceneContent/HBoxContainer/InfoPanel/MarginContainer/VBoxContainer/LoadingPanel/MC/VC/OverviewPanel/HC"]
+custom_minimum_size = Vector2(110, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.1
+text = "Overview"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="OverviewBar" type="ProgressBar" parent="CurrentSceneContent/HBoxContainer/InfoPanel/MarginContainer/VBoxContainer/LoadingPanel/MC/VC/OverviewPanel/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+
+[node name="HSeparator" type="HSeparator" parent="CurrentSceneContent/HBoxContainer/InfoPanel/MarginContainer/VBoxContainer/LoadingPanel/MC/VC/OverviewPanel/HC"]
+custom_minimum_size = Vector2(10, 0)
+layout_mode = 2
+
+[node name="SessionPanel" type="Panel" parent="CurrentSceneContent/HBoxContainer/InfoPanel/MarginContainer/VBoxContainer/LoadingPanel/MC/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StyleBoxEmpty_0wm7e")
+
+[node name="HC" type="HBoxContainer" parent="CurrentSceneContent/HBoxContainer/InfoPanel/MarginContainer/VBoxContainer/LoadingPanel/MC/VC/SessionPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Label" type="Label" parent="CurrentSceneContent/HBoxContainer/InfoPanel/MarginContainer/VBoxContainer/LoadingPanel/MC/VC/SessionPanel/HC"]
+custom_minimum_size = Vector2(110, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.1
+text = "Session"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="SessionBar" type="ProgressBar" parent="CurrentSceneContent/HBoxContainer/InfoPanel/MarginContainer/VBoxContainer/LoadingPanel/MC/VC/SessionPanel/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+
+[node name="HSeparator" type="HSeparator" parent="CurrentSceneContent/HBoxContainer/InfoPanel/MarginContainer/VBoxContainer/LoadingPanel/MC/VC/SessionPanel/HC"]
+custom_minimum_size = Vector2(10, 0)
+layout_mode = 2
+
+[node name="ProgramPanel2" type="Panel" parent="CurrentSceneContent/HBoxContainer/InfoPanel/MarginContainer/VBoxContainer/LoadingPanel/MC/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StyleBoxEmpty_0wm7e")
+
+[node name="HC" type="HBoxContainer" parent="CurrentSceneContent/HBoxContainer/InfoPanel/MarginContainer/VBoxContainer/LoadingPanel/MC/VC/ProgramPanel2"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Label" type="Label" parent="CurrentSceneContent/HBoxContainer/InfoPanel/MarginContainer/VBoxContainer/LoadingPanel/MC/VC/ProgramPanel2/HC"]
+custom_minimum_size = Vector2(110, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.1
+text = "Program"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ProgramBar" type="ProgressBar" parent="CurrentSceneContent/HBoxContainer/InfoPanel/MarginContainer/VBoxContainer/LoadingPanel/MC/VC/ProgramPanel2/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+
+[node name="HSeparator" type="HSeparator" parent="CurrentSceneContent/HBoxContainer/InfoPanel/MarginContainer/VBoxContainer/LoadingPanel/MC/VC/ProgramPanel2/HC"]
+custom_minimum_size = Vector2(10, 0)
+layout_mode = 2
+
+[node name="DataPanel" type="Panel" parent="CurrentSceneContent/HBoxContainer/InfoPanel/MarginContainer/VBoxContainer/LoadingPanel/MC/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StyleBoxEmpty_0wm7e")
+
+[node name="HC" type="HBoxContainer" parent="CurrentSceneContent/HBoxContainer/InfoPanel/MarginContainer/VBoxContainer/LoadingPanel/MC/VC/DataPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Label" type="Label" parent="CurrentSceneContent/HBoxContainer/InfoPanel/MarginContainer/VBoxContainer/LoadingPanel/MC/VC/DataPanel/HC"]
+custom_minimum_size = Vector2(110, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.1
+text = "Data"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="DataBar" type="ProgressBar" parent="CurrentSceneContent/HBoxContainer/InfoPanel/MarginContainer/VBoxContainer/LoadingPanel/MC/VC/DataPanel/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+
+[node name="HSeparator" type="HSeparator" parent="CurrentSceneContent/HBoxContainer/InfoPanel/MarginContainer/VBoxContainer/LoadingPanel/MC/VC/DataPanel/HC"]
+custom_minimum_size = Vector2(10, 0)
+layout_mode = 2

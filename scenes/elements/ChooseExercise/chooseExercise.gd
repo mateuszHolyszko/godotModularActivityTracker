@@ -13,6 +13,9 @@ var selected_exercise_entry: ProgramExerciseEntry = null
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
+	# Play animation
+	MenuManager.play_refresh_animation()
+	
 	# Start with target panel visible, exercise panel hidden
 	GetTargetPanel.show()
 	GetExercisePanel.hide()
@@ -49,6 +52,9 @@ func _on_exercise_chosen(exercise_entry: ProgramExerciseEntry) -> void:
 	
 	# Free the entire selector from the scene
 	queue_free()
+	
+	# Play animation
+	MenuManager.play_refresh_animation()
 
 
 func _on_exercise_back_pressed() -> void:
@@ -61,6 +67,9 @@ func _on_cancel() -> void:
 	cancelled.emit()
 	# Free the entire selector from the scene
 	queue_free()
+	
+	# Play animation
+	MenuManager.play_refresh_animation()
 
 
 func reset() -> void:

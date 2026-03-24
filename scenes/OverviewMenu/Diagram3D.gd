@@ -13,7 +13,7 @@ extends Node3D
 @onready var quad1 = $RootNode/Quad_1
 @onready var quad2 = $RootNode/Quad_2
 @onready var quad3 = $RootNode/Quad_3
-@onready var quad4 = $RootNode/Abductors_1
+#@onready var quad4 = $RootNode/Abductors_1
 @onready var quad5 = $RootNode/Abductors_2
 @onready var quad6 = $RootNode/Abductors_3
 #"Hamstrings": Color8(51, 255, 51),
@@ -68,7 +68,7 @@ func _ready():
 	quad1.set_meta("muscle_group", "Quads")
 	quad2.set_meta("muscle_group", "Quads")
 	quad3.set_meta("muscle_group", "Quads")
-	quad4.set_meta("muscle_group", "Quads")
+	#quad4.set_meta("muscle_group", "Quads")
 	quad5.set_meta("muscle_group", "Quads")
 	quad6.set_meta("muscle_group", "Quads")
 	

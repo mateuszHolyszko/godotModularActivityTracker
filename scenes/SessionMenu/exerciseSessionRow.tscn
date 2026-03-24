@@ -1,12 +1,15 @@
-[gd_scene load_steps=4 format=3 uid="uid://be1o4gnc1toei"]
+[gd_scene load_steps=6 format=3 uid="uid://be1o4gnc1toei"]
 
 [ext_resource type="Theme" uid="uid://f6n2yykmqd16" path="res://assets/style/theme.tres" id="1_24j1w"]
+[ext_resource type="Script" path="res://scenes/elements/ChooseExercise/ChooseExerciseButton.gd" id="2_08skd"]
 [ext_resource type="Texture2D" uid="uid://c5uqltdavmj4u" path="res://assets/icons/chevron-right-svgrepo-com.svg" id="2_uagvw"]
+[ext_resource type="PackedScene" uid="uid://cpfkskcy275d6" path="res://scenes/elements/ChooseExercise/chooseExercise.tscn" id="3_jphwb"]
 
 [sub_resource type="GDScript" id="GDScript_rjgvt"]
 script/source = "extends Control
 
 signal node_ready
+signal setOffsetToExercise(ex_id: int)
 
 var session_model: SessionModel
 var exercise_idx: int
@@ -25,17 +28,14 @@ const EXERCISE_SESSION_ROW_SET_SCENE = preload(\"res://scenes/SessionMenu/exerci
 const ADD_SET_ROW_BUTTON_SCENE = preload(\"res://scenes/SessionMenu/addSetButton.tscn\")
 
 func _ready():
-	# When the boxes are loaded, style them (by now initialize should have run so exercise is loaded)
-	var style = StyleBoxFlat.new()
-	style.bg_color = MuscleData.MUSCLE_COLORS.get(exercise.target_muscle, Color.WHITE)
-	style.set_border_width_all(2)
-	style.border_color = Color.WHITE
-
-	exercise_button.add_theme_stylebox_override(\"normal\", style)
-	exercise_button.add_theme_stylebox_override(\"hover\", style)
-	exercise_button.add_theme_stylebox_override(\"pressed\", style)
-	exercise_button.add_theme_color_override(\"font_color\", Color.BLACK)
+	# Style the exercise button with the muscle color
+	_update_exercise_button_style()
+	
 	exercise_button.text = exercise.name
+	
+	# Connect to the exercise switch and skip (cant be done in connect signals since the button needs to be loaded)
+	exercise_button.exercise_selected.connect(_on_exercise_switched)
+	skip_exercise_button.pressed.connect(_on_skip_exercise_pressed)
 	
 	# Emit node_ready signal at the end of _ready
 	node_ready.emit()
@@ -122,11 +122,128 @@ func _on_new_set_row_ready():
 
 
 func _on_set_removed(idx, set_number):
-	pass
+	# Only handle sets for this exercise
+	if idx != exercise_idx:
+		return
+	
+	# Find and remove the set row with the matching set number
+	for i in range(set_rows.size()):
+		var set_row = set_rows[i]
+		# You'll need to add a method to get the set number from the set row
+		# Assuming you have a get_set_number() method or similar
+		if set_row.set_number == set_number:  # You'll need to expose set_number in the set row
+			# Remove from container
+			if set_row.get_parent() == set_container:
+				set_container.remove_child(set_row)
+			# Remove from array
+			set_rows.remove_at(i)
+			# Update height
+			EXERCISE_ROW_HEIGHT = EXERCISE_ROW_HEIGHT - ROW_HEIGHT
+			main_control.custom_minimum_size.y = EXERCISE_ROW_HEIGHT + ADD_BUTTON_HEIGHT + 30
+			set_row.queue_free()
+			break
 
+func _on_exercise_switched(_target: String, exercise_entry: ProgramExerciseEntry):
+	# This calls the model which will emit exercise_changed signal
+	session_model.change_exercise(exercise_idx, exercise_entry.exercise)
 
 func _on_exercise_changed(idx):
+	# Check if we are the affected exercise row
+	if idx != exercise_idx:
+		return
+	
+	# Update the exercise reference
+	exercise = session_model.exercises[exercise_idx]
+	
+	# Update the exercise button
+	exercise_button.text = exercise.name
+	
+	# Update the button style with the new muscle color
+	_update_exercise_button_style()
+	
+	# Clear all existing set rows
+	_clear_all_set_rows()
+	
+	# Recreate sets for the new exercise
+	_recreate_sets()
+	
+func _on_skip_exercise_pressed():
+	# If there is no next exercise, focus on finish button
+	# Else put offset of scrollContainer to frame next ex_row
+	
+	setOffsetToExercise.emit(exercise_idx+1)
 	pass
+
+func _update_exercise_button_style():
+	\"\"\"Update the exercise button style based on the current exercise's target muscle\"\"\"
+	var style = StyleBoxFlat.new()
+	style.bg_color = MuscleData.MUSCLE_COLORS.get(exercise.target_muscle, Color.WHITE)
+	style.set_border_width_all(2)
+	style.border_color = Color.WHITE
+
+	exercise_button.add_theme_stylebox_override(\"normal\", style)
+	exercise_button.add_theme_stylebox_override(\"hover\", style)
+	exercise_button.add_theme_stylebox_override(\"pressed\", style)
+	exercise_button.add_theme_color_override(\"font_color\", Color.BLACK)
+
+func _clear_all_set_rows():
+	\"\"\"Clear all set rows from the container and array\"\"\"
+	# Remove all set rows from container
+	for set_row in set_rows:
+		if set_row.get_parent() == set_container:
+			set_container.remove_child(set_row)
+		set_row.queue_free()
+	
+	# Clear the array
+	set_rows.clear()
+	
+	# Reset the height counter
+	EXERCISE_ROW_HEIGHT = 0
+
+func _recreate_sets():
+	\"\"\"Recreate set rows for the new exercise\"\"\"
+	# Get the sets for this exercise
+	var exercise_sets = session_model.sets[exercise_idx]
+	
+	# Find the add button (should be the last child)
+	var add_button = null
+	if set_container.get_child_count() > 0:
+		add_button = set_container.get_child(set_container.get_child_count() - 1)
+	
+	# Create new set rows
+	for set_idx in range(exercise_sets.size()):
+		var set_row = EXERCISE_SESSION_ROW_SET_SCENE.instantiate()
+		set_row.initialize(session_model, set_idx, exercise_idx)
+		
+		# Add to array
+		set_rows.append(set_row)
+		
+		# Add to container before the add button
+		if add_button and add_button.get_parent() == set_container:
+			set_container.add_child(set_row)
+			# Move before the add button
+			set_container.move_child(set_row, set_container.get_child_count() - 2)
+		else:
+			# If no add button exists (shouldn't happen normally), just add at the end
+			set_container.add_child(set_row)
+		
+		# Update height
+		EXERCISE_ROW_HEIGHT += ROW_HEIGHT
+	
+	# Update the container size
+	main_control.custom_minimum_size.y = EXERCISE_ROW_HEIGHT + ADD_BUTTON_HEIGHT + 30
+
+# Optional: Add this method to clean up when the exercise row is removed
+func _exit_tree():
+	\"\"\"Clean up when the node is removed\"\"\"
+	# Disconnect signals to prevent memory leaks
+	if session_model:
+		if session_model.set_added.is_connected(_on_set_added):
+			session_model.set_added.disconnect(_on_set_added)
+		if session_model.set_removed.is_connected(_on_set_removed):
+			session_model.set_removed.disconnect(_on_set_removed)
+		if session_model.exercise_changed.is_connected(_on_exercise_changed):
+			session_model.exercise_changed.disconnect(_on_exercise_changed)
 "
 
 [node name="ExerciseSessionRow" type="Control"]
@@ -174,7 +291,9 @@ theme_override_constants/separation = 0
 [node name="ExerciseButton" type="Button" parent="Panel/HC/PanelMainContent/VC"]
 custom_minimum_size = Vector2(0, 35)
 layout_mode = 2
-text = "Exercise"
+script = ExtResource("2_08skd")
+selector_scene = ExtResource("3_jphwb")
+placeholder_text = ""
 
 [node name="Panel" type="Panel" parent="Panel/HC/PanelMainContent/VC"]
 layout_mode = 2

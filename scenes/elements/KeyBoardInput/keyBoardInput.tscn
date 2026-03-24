@@ -22,6 +22,9 @@ signal canceled
 var buffer : String = \"\"
 
 func _ready():
+	# Play animation
+	MenuManager.play_refresh_animation()
+	
 	connect_keys(keyRow1)
 	connect_keys(keyRow2)
 	connect_keys(keyRow3)
@@ -61,11 +64,17 @@ func _on_space():
 func _on_enter():
 	text_entered.emit(buffer)
 	queue_free()  # This will trigger tree_exited in KeyboardInputButton
+	
+	# Play animation
+	MenuManager.play_refresh_animation()
 
 
 func _on_cancel():
 	canceled.emit()
 	queue_free()  # This will trigger tree_exited in KeyboardInputButton
+	
+	# Play animation
+	MenuManager.play_refresh_animation()
 
 
 func update_label():

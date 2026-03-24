@@ -32,7 +32,7 @@ func initialize(program: HypertrophyProgramResource) -> void:
 	#SessionManager.load_sessions( DataManager.current_user ) <- this is being automaticly changed on user change (in popUpMenu in main, propably should do that in DataManager xd)
 	sessionModel = SessionModel.new(active_program)
 	# Toggle navBar
-	MenuManager.toggle_nav_buttons(true)
+	MenuManager.toggle_nav_buttons_disable(true)
 
 	# Set start time
 	sessionModel.start_time = Time.get_unix_time_from_system()
@@ -54,10 +54,14 @@ func initialize(program: HypertrophyProgramResource) -> void:
 	# Get sorted entries and instantiate rows in correct order
 	var sorted_entries = active_program.get_sorted_entries()
 	for entry in sorted_entries:
+		print(\"						Row= \",entry.exercise.name)
 		var exercise_row = EXERCISE_SESSION_ROW_SCENE.instantiate()
 		
 		# Pass session and order
 		exercise_row.initialize(sessionModel,entry.order)  
+		# Connect signal
+		exercise_row.setOffsetToExercise.connect( offsetScrollToExercise )
+		# Add as a child
 		scroll_content.add_child(exercise_row)
 		
 func _on_finish_pressed() -> void:
@@ -71,8 +75,8 @@ func _on_finish_pressed() -> void:
 	NotificationManager.notify(\"Session Finished\")
 	
 	# Toggle navBar
-	MenuManager.toggle_nav_buttons(false)
-	MenuManager.change_menu(\"res://scenes/SessionMenu/sessionMenu.tscn\")
+	MenuManager.toggle_nav_buttons_disable(false)
+	MenuManager.change_menu(\"session_menu\")
 
 
 func _on_abort_pressed() -> void:
@@ -87,8 +91,37 @@ func _abort_session() -> void:
 	NotificationManager.notify(\"Session Aborted\")
 	
 	# Toggle navBar
-	MenuManager.toggle_nav_buttons(false)
-	MenuManager.change_menu(\"res://scenes/SessionMenu/sessionMenu.tscn\")
+	MenuManager.toggle_nav_buttons_disable(false)
+	MenuManager.change_menu(\"session_menu\")
+	
+# ========================
+# INIT
+# ========================
+
+func offsetScrollToExercise(exercise_idx: int) -> void:
+	var children = scroll_content.get_children()
+	
+	# Check if index is valid
+	if exercise_idx >= 0 and exercise_idx < children.size():
+		#await get_tree().process_frame
+		
+		# Sum up heights of all children before the target
+		var scroll_offset: float = 0.0
+		for i in range(exercise_idx):
+			var child = children[i]
+			scroll_offset += child.size.y
+		
+		# Grab focus to the first value input (should never be null because if no sets we create empty one)
+		var child = children[exercise_idx]
+		child.set_rows[0].value_input_weight.grab_focus()
+		
+		# Scroll to the cumulative height
+		var scroll_container = scroll_content.get_parent()
+		scroll_container.scroll_vertical = scroll_offset
+		
+	else:
+		# Invalid index, means it was the skip button of last exercise, grab focus to finish button instead
+		finish_session_button.grab_focus()
 "
 
 [sub_resource type="GDScript" id="GDScript_7ja76"]

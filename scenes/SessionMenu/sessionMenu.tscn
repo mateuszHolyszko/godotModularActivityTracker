@@ -38,6 +38,9 @@ func _instantiate_state1():
 	_current_state1_instance.show()
 	# Ensure state2 container is empty and hidden
 	_clear_state2_instance()
+	
+	# Play animation
+	MenuManager.play_refresh_animation()
 
 func _connect_state1_signals():
 	if _current_state1_instance and is_instance_valid(_current_state1_instance):
@@ -87,6 +90,9 @@ func _instantiate_state2():
 	if _current_state2_instance.has_method(\"initialize\"):
 		# Small delay to ensure the node is fully added to the scene tree
 		call_deferred(\"_initialize_state2\")
+		
+	# Play animation
+	MenuManager.play_refresh_animation()
 
 func _initialize_state2():
 	if _current_state2_instance and is_instance_valid(_current_state2_instance) and _current_state2_instance.has_method(\"initialize\"):

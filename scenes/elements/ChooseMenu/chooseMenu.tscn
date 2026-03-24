@@ -18,6 +18,9 @@ var options : Array[String] = []
 
 
 func _ready():
+	# Play animation
+	MenuManager.play_refresh_animation() # Propably should be done before to conceal init xd
+	
 	buttonCancel.pressed.connect(_on_cancel)
 
 
@@ -48,11 +51,17 @@ func _create_buttons():
 func _on_option_pressed(option : String):
 	option_selected.emit(option)
 	queue_free()
+	
+	# Play animation
+	MenuManager.play_refresh_animation()
 
 
 func _on_cancel():
 	canceled.emit()
 	queue_free()
+	
+	# Play animation
+	MenuManager.play_refresh_animation()
 "
 
 [node name="ChooseMenu" type="Control"]

@@ -3,34 +3,29 @@ extends Control
 
 @onready var content = $CurrentSceneContent
 @onready var popup_panel = $PopupPanel
-@onready var userSelectButton = $NavBar/HBoxContainer/UserSelect/VBoxContainer/UserButton
+@onready var userSelectButton = $NavBar/HBoxContainer/UserSelect/MC/VBoxContainer/UserButton
 @onready var navBar = $NavBar
-@onready var firstMenuButton = $NavBar/HBoxContainer/Overview # get button to set focus on it
 
 var user_popup_scene = preload("res://scenes/mainMenu/UserPopup.tscn")
+var init_menu := Menu.new("init_menu", "res://scenes/InitMenu/initMenu.tscn")
 
 func _ready():
 	# Set the main control reference in MenuManager
 	MenuManager.set_main_control(content)
 	MenuManager.set_nav_bar(navBar)
-	
-	# Preload some menus for faster switching
-	MenuManager.preload_menu("res://scenes/OverviewMenu/mesurmentInput.tscn")
-	MenuManager.preload_menu("res://scenes/OverviewMenu/overview.tscn")
-	MenuManager.preload_menu("res://scenes/DataMenu/dataMenu.tscn")
-	
-	run_debug()
-	print("current user: ", DataManager.current_user)
-	
-	# Set focus to the first menu in navbar
-	# Using call_deferred ensures it happens after the scene is fully ready
-	call_deferred("_set_initial_focus")
-	
-	# Set initial menu
-	MenuManager.change_menu("res://scenes/InitMenu/initMenu.tscn")
+	MenuManager.set_transition_rect($MenuTransitionLayer/TransitionRect)
 
-func _set_initial_focus():
-	firstMenuButton.grab_focus()
+	# After init is loaded set to init menu
+	init_menu.load_completed.connect(func(_scene): MenuManager.change_menu("init_menu"))
+	init_menu.preload_scene()
+
+	MenuManager.register(init_menu)
+	
+	#run_debug()
+	#print("current user: ", DataManager.current_user)
+	
+	# Disable nav bar, enable it in init menu after all navbar menus are preloaded
+	MenuManager.toggle_nav_buttons_disable(true)
 
 func run_debug():
 	var debug_script = load("res://db/scripts/debug.gd")
