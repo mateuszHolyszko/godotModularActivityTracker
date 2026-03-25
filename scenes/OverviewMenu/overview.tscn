@@ -1,12 +1,45 @@
-[gd_scene load_steps=9 format=3 uid="uid://ba7cl21wqh6pf"]
+[gd_scene load_steps=7 format=3 uid="uid://ba7cl21wqh6pf"]
 
 [ext_resource type="Script" path="res://scenes/OverviewMenu/overview.gd" id="1_eoj35"]
 [ext_resource type="Theme" uid="uid://f6n2yykmqd16" path="res://assets/style/theme.tres" id="1_vq7bv"]
-[ext_resource type="Script" path="res://scenes/OverviewMenu/Main3D_node.gd" id="3_dce5v"]
-[ext_resource type="PackedScene" uid="uid://bosvhxvj18x20" path="res://assets/models/Skeleton.fbx" id="3_no54i"]
-[ext_resource type="Script" path="res://scenes/OverviewMenu/Diagram3D.gd" id="5_erngd"]
 [ext_resource type="Script" path="res://scenes/OverviewMenu/PlotterPanel_overview.gd" id="6_0cxo7"]
 [ext_resource type="Script" path="res://scenes/elements/plotter/Plotter2D.gd" id="6_mwel0"]
+
+[sub_resource type="GDScript" id="GDScript_flav6"]
+script/source = "extends SubViewport
+
+@export var switch_time := 10.0  # seconds
+
+var scenes := []
+
+var current_index := 0
+var current_instance : Node = null
+var timer : Timer
+
+func _ready():
+	# Return preloaded packed 3d scenes from SceneRegistry
+	scenes = SceneRegistry3d.get_scenes()
+	# create timer
+	timer = Timer.new()
+	timer.wait_time = switch_time
+	timer.one_shot = false
+	timer.autostart = true
+	timer.timeout.connect(next_scene)
+	add_child(timer)
+
+	_load_scene(0)
+
+func next_scene():
+	current_index = (current_index + 1) % scenes.size()
+	_load_scene(current_index)
+
+func _load_scene(index):
+	if current_instance:
+		current_instance.queue_free()
+
+	current_instance = scenes[index].instantiate()
+	add_child(current_instance)
+"
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_8e1aw"]
 bg_color = Color(0.6, 0.6, 0.6, 0)
@@ -78,28 +111,7 @@ transparent_bg = true
 handle_input_locally = false
 size = Vector2i(298, 374)
 render_target_update_mode = 4
-
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="CurrentSceneContent/MarginContainer/HBoxContainer/VBoxLeft/ViewportPanel/MC/SubViewportContainer/SubViewport"]
-transform = Transform3D(0.523719, 0, 0.851891, 0, 1, 0, -0.851891, 0, 0.523719, -46.4063, -51.0319, 129.059)
-sky_mode = 1
-
-[node name="Camera3D" type="Camera3D" parent="CurrentSceneContent/MarginContainer/HBoxContainer/VBoxLeft/ViewportPanel/MC/SubViewportContainer/SubViewport"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.148315, 49.1016, 76.5099)
-projection = 1
-size = 100.0
-
-[node name="CameraTop" type="Marker3D" parent="CurrentSceneContent/MarginContainer/HBoxContainer/VBoxLeft/ViewportPanel/MC/SubViewportContainer/SubViewport"]
-transform = Transform3D(1, 0, -1.74846e-07, 0, 1, 0, 1.74846e-07, 0, 1, 0, 44.5077, 75.895)
-
-[node name="CameraBottom" type="Marker3D" parent="CurrentSceneContent/MarginContainer/HBoxContainer/VBoxLeft/ViewportPanel/MC/SubViewportContainer/SubViewport"]
-transform = Transform3D(1, 0, -1.74846e-07, 0, 1, 0, 1.74846e-07, 0, 1, 2.39444, -38.3111, 76.1433)
-
-[node name="MainScene" type="Node3D" parent="CurrentSceneContent/MarginContainer/HBoxContainer/VBoxLeft/ViewportPanel/MC/SubViewportContainer/SubViewport"]
-script = ExtResource("3_dce5v")
-
-[node name="Model" parent="CurrentSceneContent/MarginContainer/HBoxContainer/VBoxLeft/ViewportPanel/MC/SubViewportContainer/SubViewport/MainScene" instance=ExtResource("3_no54i")]
-transform = Transform3D(0.8, 0, 0, 0, 0.8, 0, 0, 0, 0.8, -126.062, -72.8766, 0)
-script = ExtResource("5_erngd")
+script = SubResource("GDScript_flav6")
 
 [node name="WeightPanel" type="Panel" parent="CurrentSceneContent/MarginContainer/HBoxContainer/VBoxLeft"]
 custom_minimum_size = Vector2(0, 35)

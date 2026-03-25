@@ -30,6 +30,9 @@ var sets: Array = [] # Array[Array[ExerciseSetResource]]  export so that its vis
 var start_time: int = 0
 var end_time: int = 0
 
+# Used so that exercises that are bodyweight can access this instead of quering the last measurement every time
+var lastWeight = DataManager.get_last_measurement(DataManager.current_user).weight
+
 
 # ========================
 # INIT

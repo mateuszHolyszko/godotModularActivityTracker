@@ -1,0 +1,36 @@
+[gd_scene load_steps=4 format=3 uid="uid://0s16wt65hx87"]
+
+[ext_resource type="PackedScene" uid="uid://e6q0rw6efm4e" path="res://assets/models/Skeleton_arm.fbx" id="1_byksr"]
+[ext_resource type="Script" path="res://scenes/3d/muscleDisplayScript.gd" id="1_telx8"]
+[ext_resource type="Script" path="res://scenes/3d/fbxModelMuscleMaterialAssigment.gd" id="3_ie5ne"]
+
+[node name="SceneArms" type="Node3D" node_paths=PackedStringArray("camera_node", "shot_a", "shot_b", "focus_point")]
+script = ExtResource("1_telx8")
+camera_node = NodePath("Camera3D")
+shot_a = NodePath("ShotA")
+shot_b = NodePath("ShotB")
+focus_point = NodePath("FocusPoint")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(-0.965926, -0.00903266, 0.258661, 0, 0.999391, 0.0348995, -0.258819, 0.0337103, -0.965337, 0.669, 0, -2.065)
+projection = 1
+size = 0.815
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.133207, 3.97354e-09, -0.991088, 3.35276e-08, 1, 8.51555e-09, 0.991088, -3.43632e-08, 0.133207, -2.63814, 7.45058e-08, 0.168997)
+
+[node name="DirectionalLight3D2" type="DirectionalLight3D" parent="."]
+transform = Transform3D(-0.67807, 2.8993e-08, -0.734997, 3.35276e-08, 1, 8.51556e-09, 0.734997, -1.88686e-08, -0.67807, 2.638, 0, -0.169)
+
+[node name="Model" parent="." instance=ExtResource("1_byksr")]
+transform = Transform3D(1.08, 0, 0, 0, 1.08, 0, 0, 0, 1.08, -1.667, -1.575, 0)
+script = ExtResource("3_ie5ne")
+
+[node name="ShotA" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 2.06514)
+
+[node name="ShotB" type="Node3D" parent="."]
+transform = Transform3D(-0.965926, -0.00903266, 0.258661, 0, 0.999391, 0.0348995, -0.258819, 0.0337103, -0.965337, 0.669, 0, -2.065)
+
+[node name="FocusPoint" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.0790603, 0, 0.128169)

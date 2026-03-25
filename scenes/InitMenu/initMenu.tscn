@@ -91,7 +91,7 @@ stretch = true
 [node name="SubViewport" type="SubViewport" parent="CurrentSceneContent/HBoxContainer/MC/ViewportPanel/SubViewportContainer"]
 transparent_bg = true
 handle_input_locally = false
-size = Vector2i(460, 460)
+size = Vector2i(2, 2)
 render_target_update_mode = 4
 
 [node name="Node3D" type="Node3D" parent="CurrentSceneContent/HBoxContainer/MC/ViewportPanel/SubViewportContainer/SubViewport"]
@@ -177,7 +177,7 @@ expand_mode = 2
 [node name="LoadingPanel" type="Panel" parent="CurrentSceneContent/HBoxContainer/InfoPanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 3
-size_flags_stretch_ratio = 1.5
+size_flags_stretch_ratio = 1.75
 theme = ExtResource("1_1rn05")
 script = ExtResource("4_e8rkk")
 
@@ -224,6 +224,37 @@ size_flags_horizontal = 3
 size_flags_vertical = 4
 
 [node name="HSeparator" type="HSeparator" parent="CurrentSceneContent/HBoxContainer/InfoPanel/MarginContainer/VBoxContainer/LoadingPanel/MC/VC/OverviewPanel/HC"]
+custom_minimum_size = Vector2(10, 0)
+layout_mode = 2
+
+[node name="Models3dPanel" type="Panel" parent="CurrentSceneContent/HBoxContainer/InfoPanel/MarginContainer/VBoxContainer/LoadingPanel/MC/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StyleBoxEmpty_0wm7e")
+
+[node name="HC" type="HBoxContainer" parent="CurrentSceneContent/HBoxContainer/InfoPanel/MarginContainer/VBoxContainer/LoadingPanel/MC/VC/Models3dPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Label" type="Label" parent="CurrentSceneContent/HBoxContainer/InfoPanel/MarginContainer/VBoxContainer/LoadingPanel/MC/VC/Models3dPanel/HC"]
+custom_minimum_size = Vector2(110, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.1
+text = "3D Scenes"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Models3dBar" type="ProgressBar" parent="CurrentSceneContent/HBoxContainer/InfoPanel/MarginContainer/VBoxContainer/LoadingPanel/MC/VC/Models3dPanel/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+
+[node name="HSeparator" type="HSeparator" parent="CurrentSceneContent/HBoxContainer/InfoPanel/MarginContainer/VBoxContainer/LoadingPanel/MC/VC/Models3dPanel/HC"]
 custom_minimum_size = Vector2(10, 0)
 layout_mode = 2
 

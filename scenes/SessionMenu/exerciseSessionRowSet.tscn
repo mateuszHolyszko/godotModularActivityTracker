@@ -1,4 +1,4 @@
-[gd_scene load_steps=6 format=3 uid="uid://ci4tjfpx77sfm"]
+[gd_scene load_steps=7 format=3 uid="uid://ci4tjfpx77sfm"]
 
 [ext_resource type="Theme" uid="uid://f6n2yykmqd16" path="res://assets/style/theme.tres" id="1_svj02"]
 [ext_resource type="Script" path="res://scenes/elements/valueInput/ValueInput.gd" id="2_e07u2"]
@@ -19,6 +19,8 @@ var set_data: ExerciseSetResource
 var previous_set: ExerciseSetResource
 var edited_flag : bool = 0 # Use this flag when saving session (discard sets that havent been edited)
 
+var exercise: ExerciseResource
+
 # --------------------
 # UI NODES
 # --------------------
@@ -28,6 +30,9 @@ var edited_flag : bool = 0 # Use this flag when saving session (discard sets tha
 @onready var value_input_weight    = $Panel/HC/MainPanel/VC/WeightPanel/HC/InputWeightPanel/ValueInputWeight
 @onready var value_input_reps      = $Panel/HC/MainPanel/VC/RepsPanel/HC/InputRepsPanel/ValueInputReps
 @onready var set_num_label         = $Panel/HC/SetNumPanel/HC/SetNumLabel
+
+# Adjust it if exercise is bodyweight
+@onready var weight_label 		   = $Panel/HC/MainPanel/VC/WeightPanel/HC/LabelPanel/MC/Label
 
 func _ready():
 	# Emit node_ready signal at the end of _ready
@@ -41,6 +46,7 @@ func initialize(model: SessionModel, idx: int, exercise_idx: int):
 	session_model = model
 	set_idx = idx
 	self.exercise_idx = exercise_idx
+	exercise = session_model.exercises[ exercise_idx ]
 	
 	previous_set = session_model.sets[exercise_idx][set_idx]
 	print(\"				Retrived Set for set \",set_idx,\" R: \",previous_set.reps,\" W: \",previous_set.weight)
@@ -76,6 +82,12 @@ func _on_node_ready():
 	# connect inputs/buttons
 	value_input_weight.value_confirmed.connect(_on_weight_changed)
 	value_input_reps.value_confirmed.connect(_on_reps_changed)
+	
+	# check if its bodyweight exercise if so take last know weight (saved in session model at .lastWeight)
+	if exercise.bodyweight:
+		weight_label.text = \"Weight\\nbw:\" + str(session_model.lastWeight)
+	else:
+		weight_label.text = \"Weight\"
 	
 	# Make set semi transparent to indicate it has not been edited yet
 	set_root.modulate.a = 0.7  # Semi-transparent
@@ -128,6 +140,39 @@ border_width_left = 2
 border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
+
+[sub_resource type="GDScript" id="GDScript_w1r7w"]
+script/source = "extends TextureRect
+
+@onready var root = $\"../../../../../../../../../..\"
+@onready var ValueInputReps = $\"../../../../InputRepsPanel/ValueInputReps\"
+var downArrow = \"res://assets/icons/chevron-down-svgrepo-com.svg\"
+var upArrow = \"res://assets/icons/chevron-up-svgrepo-com.svg\"
+
+# Called when the node enters the scene tree for the first time.
+func _ready():
+	ValueInputReps.value_confirmed.connect(_adjust_arrow_icon)
+
+func _adjust_arrow_icon(numberOfReps):
+	var session = root.session_model
+	var exercise = session.exercises[ root.exercise_idx ]
+	
+	# Check if exercise.rep_range vector is bigger or smaller then number of reps, 
+	# then adjust textureRect texture accordingly (or leave it blank if it fits the range)
+	
+	var rep_range = exercise.rep_range
+	var min_reps = rep_range.x
+	var max_reps = rep_range.y
+	
+	if numberOfReps < min_reps:
+		texture = load(downArrow)
+		NotificationManager.notify(\"Too few reps\\nRecommend lowering weight\")
+	elif numberOfReps > max_reps:
+		texture = load(upArrow)
+		NotificationManager.notify(\"Too many reps\\nRecommend increasing weight\")
+	else:
+		texture = null
+"
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_amanx"]
 bg_color = Color(0.133196, 0.133196, 0.133196, 1)
@@ -228,16 +273,20 @@ layout_mode = 2
 size_flags_horizontal = 3
 size_flags_stretch_ratio = 0.6
 
-[node name="Label" type="Label" parent="Panel/HC/MainPanel/VC/WeightPanel/HC/LabelPanel"]
+[node name="MC" type="MarginContainer" parent="Panel/HC/MainPanel/VC/WeightPanel/HC/LabelPanel"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_font_sizes/font_size = 28
-text = "Weight[Kg]"
-horizontal_alignment = 1
+theme_override_constants/margin_left = 10
+
+[node name="Label" type="Label" parent="Panel/HC/MainPanel/VC/WeightPanel/HC/LabelPanel/MC"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Weight
+"
 vertical_alignment = 1
 
 [node name="InputWeightPanel" type="Panel" parent="Panel/HC/MainPanel/VC/WeightPanel/HC"]
@@ -307,17 +356,32 @@ layout_mode = 2
 size_flags_horizontal = 3
 size_flags_stretch_ratio = 0.6
 
-[node name="Label" type="Label" parent="Panel/HC/MainPanel/VC/RepsPanel/HC/LabelPanel"]
+[node name="MC" type="MarginContainer" parent="Panel/HC/MainPanel/VC/RepsPanel/HC/LabelPanel"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_font_sizes/font_size = 28
+theme_override_constants/margin_left = 10
+
+[node name="HC" type="HBoxContainer" parent="Panel/HC/MainPanel/VC/RepsPanel/HC/LabelPanel/MC"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Panel/HC/MainPanel/VC/RepsPanel/HC/LabelPanel/MC/HC"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
 text = "Reps"
 horizontal_alignment = 1
 vertical_alignment = 1
+
+[node name="ArrowIndicator" type="TextureRect" parent="Panel/HC/MainPanel/VC/RepsPanel/HC/LabelPanel/MC/HC"]
+custom_minimum_size = Vector2(20, 20)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+expand_mode = 2
+script = SubResource("GDScript_w1r7w")
 
 [node name="InputRepsPanel" type="Panel" parent="Panel/HC/MainPanel/VC/RepsPanel/HC"]
 layout_mode = 2
