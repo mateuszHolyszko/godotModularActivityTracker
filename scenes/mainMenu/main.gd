@@ -3,7 +3,7 @@ extends Control
 
 @onready var content = $CurrentSceneContent
 @onready var popup_panel = $PopupPanel
-@onready var userSelectButton = $NavBar/HBoxContainer/UserSelect/MC/VBoxContainer/UserButton
+@onready var userSelectButton = $NavBar/HBoxContainer/UserSelect/VC/UserButton
 @onready var navBar = $NavBar
 
 var user_popup_scene = preload("res://scenes/mainMenu/UserPopup.tscn")
