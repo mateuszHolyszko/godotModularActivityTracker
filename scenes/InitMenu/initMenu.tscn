@@ -91,7 +91,7 @@ stretch = true
 [node name="SubViewport" type="SubViewport" parent="CurrentSceneContent/HBoxContainer/MC/ViewportPanel/SubViewportContainer"]
 transparent_bg = true
 handle_input_locally = false
-size = Vector2i(2, 2)
+size = Vector2i(460, 460)
 render_target_update_mode = 4
 
 [node name="Node3D" type="Node3D" parent="CurrentSceneContent/HBoxContainer/MC/ViewportPanel/SubViewportContainer/SubViewport"]

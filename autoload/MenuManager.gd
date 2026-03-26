@@ -58,17 +58,27 @@ func _do_change_menu():
 		push_error("MenuManager: unknown menu '%s'." % _pending_menu_name)
 		return
 	
-	var scene: Node = menus[_pending_menu_name].instantiate()
+	# Hide or free existing children depending on their persistence
+	for child in main_control.get_children():
+		var child_menu_name := child.get_meta("menu_name", "") as String
+		if child_menu_name != "" and menus.has(child_menu_name) and menus[child_menu_name].is_persistent:
+			child.hide()
+		else:
+			child.queue_free()
+	
+	# Reuse the cached instance for persistent menus, or instantiate fresh
+	var pending_menu: Menu = menus[_pending_menu_name]
+	var scene: Node = pending_menu.get_or_instantiate()
 	if scene == null:
 		return
 	
-	# Clear existing menu
-	for child in main_control.get_children():
-		child.queue_free()
+	# Only add to the tree if it isn't already a child (persistent reuse)
+	if scene.get_parent() != main_control:
+		scene.set_meta("menu_name", _pending_menu_name)
+		main_control.add_child(scene)
+		_set_control_anchors(scene)
 	
-	# Add new menu
-	main_control.add_child(scene)
-	_set_control_anchors(scene)
+	scene.show()
 	
 	# Update active menu name
 	_active_menu_name = _pending_menu_name
@@ -112,6 +122,11 @@ func toggle_nav_buttons_disable(disable: bool) -> void:
 	for child in buttons_container.get_children():
 		if child is Button:
 			child.disabled = disable
+	
+	# Disable user select button
+	var user_button = nav_bar.get_node("HBoxContainer/UserSelect/VC/UserButton")
+	if user_button:
+		user_button.disabled = disable
 
 # Convenience function to toggle all nav bar buttons
 func toggle_nav_buttons_pressed(pressed: bool) -> void:

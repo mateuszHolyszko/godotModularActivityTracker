@@ -1,9 +1,9 @@
 extends Panel
 
-var overview_menu := Menu.new("overview_menu", "res://scenes/OverviewMenu/overview.tscn")
+var overview_menu := Menu.new("overview_menu", "res://scenes/OverviewMenu/overview.tscn",true)
 var user_mesurment_menu := Menu.new("user_mesurment_menu", "res://scenes/OverviewMenu/mesurmentInput.tscn") # this one doesnt get bar since its submenu
 var session_menu := Menu.new("session_menu", "res://scenes/SessionMenu/sessionMenu.tscn")
-var program_menu := Menu.new("program_menu", "res://scenes/ProgramMenu/programMenu.tscn")
+var program_menu := Menu.new("program_menu", "res://scenes/ProgramMenu/programMenu.tscn",true)
 var data_menu := Menu.new("data_menu", "res://scenes/DataMenu/dataMenu.tscn")
 
 @onready var overview_bar: ProgressBar = $MC/VC/OverviewPanel/HC/OverviewBar

@@ -245,41 +245,35 @@ size_flags_stretch_ratio = 0.65
 theme = ExtResource("2_ujpk0")
 theme_override_styles/panel = SubResource("StyleBoxFlat_kmk4m")
 
-[node name="SettingButton" type="Button" parent="NavBar/HBoxContainer"]
-custom_minimum_size = Vector2(35, 35)
-layout_mode = 2
-size_flags_vertical = 4
-icon = ExtResource("4_ybce0")
-expand_icon = true
-
-[node name="HSplitContainer6" type="HSplitContainer" parent="NavBar/HBoxContainer"]
-custom_minimum_size = Vector2(5, 0)
-layout_mode = 2
-theme_override_constants/separation = 50
-theme_override_constants/minimum_grab_thickness = 50
-
 [node name="SettingsBattery" type="Panel" parent="NavBar/HBoxContainer"]
-custom_minimum_size = Vector2(35, 0)
+custom_minimum_size = Vector2(70, 0)
 layout_mode = 2
+size_flags_horizontal = 3
 theme_override_styles/panel = SubResource("StyleBoxEmpty_tjgtk")
 
-[node name="BatterySVG" type="TextureRect" parent="NavBar/HBoxContainer/SettingsBattery"]
-custom_minimum_size = Vector2(0, 35)
+[node name="HC" type="HBoxContainer" parent="NavBar/HBoxContainer/SettingsBattery"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme_override_constants/separation = 20
+alignment = 1
+
+[node name="SettingButton" type="Button" parent="NavBar/HBoxContainer/SettingsBattery/HC"]
+custom_minimum_size = Vector2(35, 35)
+layout_mode = 2
+size_flags_vertical = 4
+icon = ExtResource("4_ybce0")
+expand_icon = true
+
+[node name="BatterySVG" type="TextureRect" parent="NavBar/HBoxContainer/SettingsBattery/HC"]
+custom_minimum_size = Vector2(35, 40)
+layout_mode = 2
 texture = ExtResource("4_vejc8")
 expand_mode = 4
 stretch_mode = 5
-
-[node name="HSplitContainer5" type="HSplitContainer" parent="NavBar/HBoxContainer"]
-custom_minimum_size = Vector2(5, 0)
-layout_mode = 2
-theme_override_constants/separation = 50
-theme_override_constants/minimum_grab_thickness = 50
 
 [node name="Clock" type="Panel" parent="NavBar/HBoxContainer"]
 layout_mode = 2

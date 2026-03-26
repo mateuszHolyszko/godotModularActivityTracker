@@ -1,6 +1,9 @@
-[gd_scene load_steps=3 format=3 uid="uid://cf7rwdccnepyb"]
+[gd_scene load_steps=6 format=3 uid="uid://cf7rwdccnepyb"]
 
 [ext_resource type="Theme" uid="uid://f6n2yykmqd16" path="res://assets/style/theme.tres" id="1_nyiuu"]
+[ext_resource type="Texture2D" uid="uid://ddv4nbasab1m3" path="res://assets/icons/chevron-up-svgrepo-com.svg" id="2_srdqa"]
+[ext_resource type="Texture2D" uid="uid://jg1xubkuxqa8" path="res://assets/icons/chevron-down-svgrepo-com.svg" id="3_nuhwr"]
+[ext_resource type="Texture2D" uid="uid://cieachpnmuni" path="res://assets/icons/trash-svgrepo-com.svg" id="4_fcvxy"]
 
 [sub_resource type="GDScript" id="GDScript_mqgnx"]
 script/source = "extends Control
@@ -214,13 +217,15 @@ theme_override_constants/separation = 0
 layout_mode = 2
 size_flags_vertical = 3
 theme = ExtResource("1_nyiuu")
-text = "Up"
+icon = ExtResource("2_srdqa")
+expand_icon = true
 
 [node name="DownButton" type="Button" parent="Panel/HC/ArrowPanel/HC/VC"]
 layout_mode = 2
 size_flags_vertical = 3
 theme = ExtResource("1_nyiuu")
-text = "Dwn"
+icon = ExtResource("3_nuhwr")
+expand_icon = true
 
 [node name="OrderNumberPanel" type="Panel" parent="Panel/HC/ArrowPanel/HC"]
 layout_mode = 2
@@ -263,6 +268,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_font_sizes/font_size = 22
 text = "Exercise Name"
 
 [node name="EditPanel" type="Panel" parent="Panel/HC/MainPanel/VC"]
@@ -354,4 +360,6 @@ alignment = 1
 [node name="DelButton" type="Button" parent="Panel/HC/MainPanel/VC/EditPanel/HC"]
 custom_minimum_size = Vector2(50, 0)
 layout_mode = 2
-text = "Del"
+icon = ExtResource("4_fcvxy")
+icon_alignment = 1
+expand_icon = true

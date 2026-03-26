@@ -367,3 +367,23 @@ func find_most_recent_sets(exercise: ExerciseResource) -> Array[ExerciseSetResou
 
 	print("SessionManager.find_most_recent_sets: returning ", result.size(), " sets — ", result.map(func(s): return "set#" + str(s.set_number) + " w=" + str(s.weight) + " r=" + str(s.reps)))
 	return result
+
+## Returns arrays of weight, reps, and timestamps for sets of the given exercise within the last [time_back] seconds.
+## Returns a dictionary: {"weights": Array[float], "reps": Array[int], "timestamps": Array[int]}
+func find_top_sets_for_exercise_in_time_range(exercise: ExerciseResource, time_back: int) -> Dictionary:
+	var now = Time.get_unix_time_from_system()
+	var min_ts = now - time_back
+	var weights: Array[float] = []
+	var reps: Array[int] = []
+	var timestamps: Array[int] = []
+	for session in sessions:
+		var top_set_found = false
+		for s in session.sets:
+			if top_set_found:
+				break
+			if s.exercise != null and s.exercise.id == exercise.id and s.timestamp >= min_ts:
+				weights.append(s.weight)
+				reps.append(s.reps)
+				timestamps.append(s.timestamp)
+				top_set_found = true
+	return {"weights": weights, "reps": reps, "timestamps": timestamps}

@@ -14,6 +14,8 @@ func _ready():
 	MenuManager.set_main_control(content)
 	MenuManager.set_nav_bar(navBar)
 	MenuManager.set_transition_rect($MenuTransitionLayer/TransitionRect)
+	
+	Engine.max_fps = 24
 
 	# After init is loaded set to init menu
 	init_menu.load_completed.connect(func(_scene): MenuManager.change_menu("init_menu"))

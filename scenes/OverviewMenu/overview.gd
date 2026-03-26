@@ -1,20 +1,34 @@
 extends Control
 
+signal plotQueryChanged
+
 @onready var rootContainter = $CurrentSceneContent
-@onready var container = $CurrentSceneContent/MarginContainer/HBoxContainer/PanelMiddle/MarginContainer/VBoxMiddle
+@onready var container = $CurrentSceneContent/MarginContainer/HBoxContainer/PanelMiddle/MarginContainer/VTargetMuscles
 @onready var buttonMesurments = $CurrentSceneContent/MarginContainer/HBoxContainer/VBoxLeft/ButtonMesurments
 @onready var LastWeightLabel = $CurrentSceneContent/MarginContainer/HBoxContainer/VBoxLeft/WeightPanel/HBoxContainer/LastWeightTakenDate
 @onready var LastDateLabel = $CurrentSceneContent/MarginContainer/HBoxContainer/VBoxLeft/WeightPanel/HBoxContainer/LastWeightTaken
 
-
+@onready var ValueInDay = $CurrentSceneContent/MarginContainer/HBoxContainer/PanelRight/VBoxContainer/PlotterInputsPanel/TimeInput/HC/DayInputPanel/VBoxContainer/DayInput
+@onready var ValueInMonth = $CurrentSceneContent/MarginContainer/HBoxContainer/PanelRight/VBoxContainer/PlotterInputsPanel/TimeInput/HC/MonthInputPanel2/VBoxContainer/MonthInput
+@onready var ValueInYear = $CurrentSceneContent/MarginContainer/HBoxContainer/PanelRight/VBoxContainer/PlotterInputsPanel/TimeInput/HC/YearInputPanel3/VBoxContainer/YearInput
 var custom_theme = preload("res://assets/style/retro_style.tres")
+
+var plotQueryTarget: String
+var plotQueryExercise: String
+var plotQueryTime
 
 func _ready():
 	#buttonMesurments.grab_focus()
 	container.theme = custom_theme
-	create_muscle_buttons()
 	DataManager.user_changed.connect(_on_user_changed)
 	_update_weight_label()
+	
+	# === Time Query stuff ===
+	get_time_from_time_inputs()
+	# connect to value inputs
+	ValueInDay.value_confirmed.connect(_on_time_input_changed)
+	ValueInMonth.value_confirmed.connect(_on_time_input_changed)
+	ValueInYear.value_confirmed.connect(_on_time_input_changed)
 
 
 func _on_user_changed(_user: UserResource):
@@ -43,27 +57,22 @@ func _update_weight_label():
 		LastDateLabel.text = str(diff_days) + " days ago"
 
 
-func create_muscle_buttons():
-
-	for muscle in MuscleData.get_all_muscles():
-
-		var btn = Button.new()
-		btn.text = muscle
-
-		var color = MuscleData.get_color(muscle)
-		apply_button_color(btn, color)
-
-		container.add_child(btn)
-
-func apply_button_color(button: Button, color: Color):
-
-	var style = StyleBoxFlat.new()
-	style.bg_color = color
-	
-	button.add_theme_color_override("font_color", Color.BLACK)
-	button.add_theme_font_size_override("font_size", 30)
-
-	button.add_theme_stylebox_override("normal", style)
-
 func _on_button_mesurments_pressed():
 	MenuManager.change_menu("user_mesurment_menu")
+	
+	
+func _on_time_input_changed(_value):
+	"""Handle any time input change by recalculating the total time"""
+	get_time_from_time_inputs()
+
+func get_time_from_time_inputs():
+	"""Calculate total time in seconds from day, month, and year inputs"""
+	var day_in_seconds = 24 * 60 * 60  # 86400 seconds
+	
+	# Note: This is a simplified calculation assuming 31 days per month
+	# For more accuracy, you might want to use actual calendar calculations
+	var days = ValueInDay.value + (ValueInMonth.value * 31) + (ValueInYear.value * 365)
+	
+	plotQueryTime = days * day_in_seconds
+	#print("Time calculated - Days: ", days, " Seconds: ", plotQueryTime)
+	plotQueryChanged.emit()

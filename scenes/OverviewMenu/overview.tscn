@@ -1,8 +1,11 @@
-[gd_scene load_steps=7 format=3 uid="uid://ba7cl21wqh6pf"]
+[gd_scene load_steps=12 format=3 uid="uid://ba7cl21wqh6pf"]
 
 [ext_resource type="Script" path="res://scenes/OverviewMenu/overview.gd" id="1_eoj35"]
 [ext_resource type="Theme" uid="uid://f6n2yykmqd16" path="res://assets/style/theme.tres" id="1_vq7bv"]
+[ext_resource type="Script" path="res://scenes/elements/ChooseMenu/ChooseMenuButton.gd.gd" id="5_aq6of"]
+[ext_resource type="Script" path="res://scenes/elements/valueInput/ValueInput.gd" id="5_x1x8c"]
 [ext_resource type="Script" path="res://scenes/OverviewMenu/PlotterPanel_overview.gd" id="6_0cxo7"]
+[ext_resource type="PackedScene" uid="uid://bx7vvp56bjv2x" path="res://scenes/elements/ChooseMenu/chooseMenu.tscn" id="6_cg2pa"]
 [ext_resource type="Script" path="res://scenes/elements/plotter/Plotter2D.gd" id="6_mwel0"]
 
 [sub_resource type="GDScript" id="GDScript_flav6"]
@@ -41,9 +44,123 @@ func _load_scene(index):
 	add_child(current_instance)
 "
 
+[sub_resource type="GDScript" id="GDScript_bx17m"]
+script/source = "extends VBoxContainer
+
+@onready var root = $\"../../../../../..\"
+signal target_selected
+
+func _ready():
+	create_muscle_buttons()
+
+func create_muscle_buttons():
+	for muscle in MuscleData.get_all_muscles():
+		var btn = Button.new()
+		btn.toggle_mode = true  # Make the button a toggle button
+		btn.text = muscle
+		
+		var color = MuscleData.get_color(muscle)
+		apply_button_color(btn, color)
+		
+		# Connect the button's pressed signal
+		btn.pressed.connect(_on_muscle_button_pressed.bind(muscle))
+		
+		add_child(btn)
+
+func _on_muscle_button_pressed(muscle: String):
+	# Set the plotQueryTarget on the root node
+	root.plotQueryTarget = muscle
+	target_selected.emit()
+	#print(\"Selected muscle: \", muscle)  
+	# Make sure to untoggle every button except the one pressed:
+	for btn in get_children():
+		if btn.text == muscle:
+			btn.button_pressed = true
+		else:
+			btn.button_pressed = false
+
+func apply_button_color(button: Button, color: Color):
+	var style = StyleBoxFlat.new()
+	style.bg_color = color
+	
+	button.add_theme_color_override(\"font_color\", Color.BLACK)
+	button.add_theme_font_size_override(\"font_size\", 30)
+	button.add_theme_stylebox_override(\"normal\", style)
+	
+	# Create style for pressed/toggled state
+	var pressed_style = StyleBoxFlat.new()
+	pressed_style.bg_color = color  # Keep the same background color
+	pressed_style.border_width_bottom = 2
+	pressed_style.border_width_top = 2
+	pressed_style.border_width_left = 2
+	pressed_style.border_width_right = 2
+	pressed_style.border_color = Color.BLUE
+	
+	button.add_theme_color_override(\"font_color\", Color.BLACK)
+	button.add_theme_font_size_override(\"font_size\", 30)
+	button.add_theme_stylebox_override(\"normal\", style)
+	button.add_theme_stylebox_override(\"pressed\", pressed_style)
+"
+
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_8e1aw"]
 bg_color = Color(0.6, 0.6, 0.6, 0)
 border_color = Color(0.8, 0.8, 0.8, 0)
+
+[sub_resource type="GDScript" id="GDScript_44jr2"]
+script/source = "extends Panel
+
+@onready var root = $\"../../../../../../..\"
+@onready var muscleTargerContainer = $\"../../../../PanelMiddle/MarginContainer/VTargetMuscles\"
+@onready var chooseExerciseButton = $ChooseExerciseButton
+
+signal plotQueryChanged
+
+func _ready():
+	# Connect to the exercise_selected signal from chooseExerciseButton
+	chooseExerciseButton.option_changed.connect(_on_exercise_selected) 
+	muscleTargerContainer.target_selected.connect(_on_target_selected)
+	# Disable button since on ready target wont be chosen yet
+	chooseExerciseButton.disabled = true
+
+func _on_target_selected():
+	# Set options for $ChooseExerciseButton
+	chooseExerciseButton.set_options( DataManager.get_exercises_names_by_muscle( root.plotQueryTarget ) )
+	
+	# update button prompt, and enable the button (since now the exercise list wont be empty)
+	chooseExerciseButton.text = \"Select Exercise\"
+	chooseExerciseButton.disabled = false
+	
+	# style the button to match the colour
+	var style = StyleBoxFlat.new()
+	var color = MuscleData.get_color( root.plotQueryTarget )
+	style.bg_color = color
+
+	chooseExerciseButton.add_theme_color_override(\"font_color\", Color.BLACK)
+	chooseExerciseButton.add_theme_font_size_override(\"font_size\", 30)
+	chooseExerciseButton.add_theme_stylebox_override(\"normal\", style)
+
+	# Create style for pressed/toggled state
+	var pressed_style = StyleBoxFlat.new()
+	pressed_style.bg_color = color  # Keep the same background color
+	pressed_style.border_width_bottom = 2
+	pressed_style.border_width_top = 2
+	pressed_style.border_width_left = 2
+	pressed_style.border_width_right = 2
+	pressed_style.border_color = Color.BLUE
+
+	chooseExerciseButton.add_theme_color_override(\"font_color\", Color.BLACK)
+	chooseExerciseButton.add_theme_font_size_override(\"font_size\", 30)
+	chooseExerciseButton.add_theme_stylebox_override(\"normal\", style)
+	chooseExerciseButton.add_theme_stylebox_override(\"pressed\", pressed_style)
+
+func _on_exercise_selected(exercise_string: String):
+	# Set the plotQueryExercise on the root node
+	root.plotQueryExercise = exercise_string
+	#print(\"Selected exercise: \", exercise_string) 
+	plotQueryChanged.emit()
+	
+	
+"
 
 [node name="Overview" type="Control"]
 layout_mode = 3
@@ -182,11 +299,12 @@ theme_override_constants/margin_top = 5
 theme_override_constants/margin_right = 5
 theme_override_constants/margin_bottom = 5
 
-[node name="VBoxMiddle" type="VBoxContainer" parent="CurrentSceneContent/MarginContainer/HBoxContainer/PanelMiddle/MarginContainer"]
+[node name="VTargetMuscles" type="VBoxContainer" parent="CurrentSceneContent/MarginContainer/HBoxContainer/PanelMiddle/MarginContainer"]
 custom_minimum_size = Vector2(135, 0)
 layout_mode = 2
 theme = ExtResource("1_vq7bv")
 alignment = 1
+script = SubResource("GDScript_bx17m")
 
 [node name="PanelRight" type="Panel" parent="CurrentSceneContent/MarginContainer/HBoxContainer"]
 layout_mode = 2
@@ -205,6 +323,7 @@ grow_vertical = 2
 [node name="PlotterPanel" type="Panel" parent="CurrentSceneContent/MarginContainer/HBoxContainer/PanelRight/VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 3
+size_flags_stretch_ratio = 0.8
 theme = ExtResource("1_vq7bv")
 script = ExtResource("6_0cxo7")
 
@@ -224,10 +343,126 @@ theme_override_constants/margin_bottom = 20
 layout_mode = 2
 script = ExtResource("6_mwel0")
 
-[node name="PlotterInputsPanel" type="Panel" parent="CurrentSceneContent/MarginContainer/HBoxContainer/PanelRight/VBoxContainer"]
+[node name="PlotterInputsPanel" type="VBoxContainer" parent="CurrentSceneContent/MarginContainer/HBoxContainer/PanelRight/VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 3
 size_flags_stretch_ratio = 0.25
 theme = ExtResource("1_vq7bv")
+
+[node name="TimeInput" type="Panel" parent="CurrentSceneContent/MarginContainer/HBoxContainer/PanelRight/VBoxContainer/PlotterInputsPanel"]
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_stretch_ratio = 3.0
+
+[node name="HC" type="HBoxContainer" parent="CurrentSceneContent/MarginContainer/HBoxContainer/PanelRight/VBoxContainer/PlotterInputsPanel/TimeInput"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="DayInputPanel" type="Panel" parent="CurrentSceneContent/MarginContainer/HBoxContainer/PanelRight/VBoxContainer/PlotterInputsPanel/TimeInput/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.3
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CurrentSceneContent/MarginContainer/HBoxContainer/PanelRight/VBoxContainer/PlotterInputsPanel/TimeInput/HC/DayInputPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Label" type="Label" parent="CurrentSceneContent/MarginContainer/HBoxContainer/PanelRight/VBoxContainer/PlotterInputsPanel/TimeInput/HC/DayInputPanel/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_font_sizes/font_size = 20
+text = "Days"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="DayInput" type="Button" parent="CurrentSceneContent/MarginContainer/HBoxContainer/PanelRight/VBoxContainer/PlotterInputsPanel/TimeInput/HC/DayInputPanel/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_font_sizes/font_size = 24
+script = ExtResource("5_x1x8c")
+max_value = 31.0
+
+[node name="MonthInputPanel2" type="Panel" parent="CurrentSceneContent/MarginContainer/HBoxContainer/PanelRight/VBoxContainer/PlotterInputsPanel/TimeInput/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.3
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CurrentSceneContent/MarginContainer/HBoxContainer/PanelRight/VBoxContainer/PlotterInputsPanel/TimeInput/HC/MonthInputPanel2"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Label" type="Label" parent="CurrentSceneContent/MarginContainer/HBoxContainer/PanelRight/VBoxContainer/PlotterInputsPanel/TimeInput/HC/MonthInputPanel2/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_font_sizes/font_size = 20
+text = "Months"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="MonthInput" type="Button" parent="CurrentSceneContent/MarginContainer/HBoxContainer/PanelRight/VBoxContainer/PlotterInputsPanel/TimeInput/HC/MonthInputPanel2/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_font_sizes/font_size = 24
+script = ExtResource("5_x1x8c")
+value = 2.0
+max_value = 12.0
+
+[node name="YearInputPanel3" type="Panel" parent="CurrentSceneContent/MarginContainer/HBoxContainer/PanelRight/VBoxContainer/PlotterInputsPanel/TimeInput/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.3
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CurrentSceneContent/MarginContainer/HBoxContainer/PanelRight/VBoxContainer/PlotterInputsPanel/TimeInput/HC/YearInputPanel3"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Label" type="Label" parent="CurrentSceneContent/MarginContainer/HBoxContainer/PanelRight/VBoxContainer/PlotterInputsPanel/TimeInput/HC/YearInputPanel3/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_font_sizes/font_size = 20
+text = "Years"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="YearInput" type="Button" parent="CurrentSceneContent/MarginContainer/HBoxContainer/PanelRight/VBoxContainer/PlotterInputsPanel/TimeInput/HC/YearInputPanel3/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_font_sizes/font_size = 24
+script = ExtResource("5_x1x8c")
+max_value = 80.0
+
+[node name="ExerciseInput" type="Panel" parent="CurrentSceneContent/MarginContainer/HBoxContainer/PanelRight/VBoxContainer/PlotterInputsPanel"]
+custom_minimum_size = Vector2(0, 33)
+layout_mode = 2
+size_flags_vertical = 10
+script = SubResource("GDScript_44jr2")
+
+[node name="ChooseExerciseButton" type="Button" parent="CurrentSceneContent/MarginContainer/HBoxContainer/PanelRight/VBoxContainer/PlotterInputsPanel/ExerciseInput"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "Select Target"
+script = ExtResource("5_aq6of")
+choose_menu_scene = ExtResource("6_cg2pa")
+prompt_text = "Choose Exercise"
 
 [connection signal="pressed" from="CurrentSceneContent/MarginContainer/HBoxContainer/VBoxLeft/ButtonMesurments" to="." method="_on_button_mesurments_pressed"]

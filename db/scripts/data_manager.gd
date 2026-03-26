@@ -169,7 +169,20 @@ func delete_exercise(exercise_id: String) -> void:
 	exercises = exercises.filter(func(e): return e.id != exercise_id)
 	save_exercises()
  
+
+func get_exercises_names_by_muscle(muscle: String) -> Array[String]:
+	var names: Array[String] = []
+	for e in exercises:
+		if e.target_muscle == muscle:
+			names.append(e.name)
+	return names
  
+func get_exercise_by_name(name: String) -> ExerciseResource:
+	for e in exercises:
+		if e.name == name:
+			return e
+	return null
+
 func get_exercises_by_muscle(muscle: String) -> Array[ExerciseResource]:
 	return exercises.filter(func(e): return e.target_muscle == muscle)
 
