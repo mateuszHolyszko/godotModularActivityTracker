@@ -1,0 +1,320 @@
+[gd_scene load_steps=10 format=3 uid="uid://mvnu36dn1njm"]
+
+[ext_resource type="Script" path="res://scenes/SettingsMenu/settingMenu.gd" id="1_il0w6"]
+[ext_resource type="Theme" uid="uid://f6n2yykmqd16" path="res://assets/style/theme.tres" id="2_ewdve"]
+[ext_resource type="Texture2D" uid="uid://ca382g8x3661c" path="res://assets/images/logo.png" id="3_3vfxl"]
+[ext_resource type="Texture2D" uid="uid://ckxu85xwh7omx" path="res://assets/icons/add-box-svgrepo-com.svg" id="4_40nfb"]
+[ext_resource type="Script" path="res://scenes/elements/KeyBoardInput/KeyboardInputButton.gd" id="5_bhcpc"]
+[ext_resource type="PackedScene" uid="uid://b8kt1prsxu3fy" path="res://scenes/elements/KeyBoardInput/keyBoardInput.tscn" id="6_t0uh8"]
+
+[sub_resource type="GDScript" id="GDScript_fnnis"]
+script/source = "extends VBoxContainer
+
+@onready var ManageUsersButton = $ButtonPanelUsers/ManageUsersButton
+@onready var ManageUsersPanel = $\"../../SettingPopUpPanel/MC/ManageUsersPanel\"
+
+@onready var ShaderSettingsButton = $ButtonPanelShader/ShaderSettingsButton
+@onready var ShaderSettingsPanel = $\"../../SettingPopUpPanel/MC/ShaderSettingsPanel\"
+
+@onready var TODOButton = $ButtonPanelTODO/TODOButton
+@onready var TODOPanel = $\"../../SettingPopUpPanel/MC/TODOPanel\"
+
+var activeSetting: Panel = null
+var activeButton: Button = null
+
+func _ready():
+	# Set all buttons to toggle mode
+	ManageUsersButton.toggle_mode = true
+	ShaderSettingsButton.toggle_mode = true
+	TODOButton.toggle_mode = true
+	
+	# Connect toggled signals
+	ManageUsersButton.toggled.connect(_on_manage_users_toggled)
+	ShaderSettingsButton.toggled.connect(_on_shader_settings_toggled)
+	TODOButton.toggled.connect(_on_todo_toggled)
+	
+	# Initially hide all panels
+	hide_all_panels()
+
+func hide_all_panels():
+	ManageUsersPanel.hide()
+	ShaderSettingsPanel.hide()
+	TODOPanel.hide()
+	activeSetting = null
+
+func unpress_all_buttons():
+	ManageUsersButton.set_pressed_no_signal(false)
+	ShaderSettingsButton.set_pressed_no_signal(false)
+	TODOButton.set_pressed_no_signal(false)
+	activeButton = null
+
+func _on_manage_users_toggled(toggled_on: bool):
+	if toggled_on:
+		# Unpress all other buttons
+		unpress_all_buttons()
+		
+		# Set this button as active
+		ManageUsersButton.set_pressed_no_signal(true)
+		activeButton = ManageUsersButton
+		
+		# Hide all panels and show the selected one
+		hide_all_panels()
+		ManageUsersPanel.show()
+		activeSetting = ManageUsersPanel
+	else:
+		# If this button is being toggled off
+		if activeButton == ManageUsersButton:
+			hide_all_panels()
+			activeButton = null
+
+func _on_shader_settings_toggled(toggled_on: bool):
+	if toggled_on:
+		# Unpress all other buttons
+		unpress_all_buttons()
+		
+		# Set this button as active
+		ShaderSettingsButton.set_pressed_no_signal(true)
+		activeButton = ShaderSettingsButton
+		
+		# Hide all panels and show the selected one
+		hide_all_panels()
+		ShaderSettingsPanel.show()
+		activeSetting = ShaderSettingsPanel
+	else:
+		# If this button is being toggled off
+		if activeButton == ShaderSettingsButton:
+			hide_all_panels()
+			activeButton = null
+
+func _on_todo_toggled(toggled_on: bool):
+	if toggled_on:
+		# Unpress all other buttons
+		unpress_all_buttons()
+		
+		# Set this button as active
+		TODOButton.set_pressed_no_signal(true)
+		activeButton = TODOButton
+		
+		# Hide all panels and show the selected one
+		hide_all_panels()
+		TODOPanel.show()
+		activeSetting = TODOPanel
+	else:
+		# If this button is being toggled off
+		if activeButton == TODOButton:
+			hide_all_panels()
+			activeButton = null
+
+# Helper: Method to get the currently active panel
+func get_active_setting() -> Panel:
+	return activeSetting
+"
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_18pn6"]
+
+[sub_resource type="GDScript" id="GDScript_7qov3"]
+script/source = "extends VBoxContainer
+
+var userListRow_path = \"res://scenes/SettingsMenu/UserListRow.tscn\"
+@onready var addUserButton = $\"../AddUserButton\"
+
+func _ready():
+	addUserButton.text_changed.connect(on_add_user)
+	create_user_list()
+
+func create_user_list():
+	# Clear any existing children first (if needed)
+	for child in get_children():
+		child.queue_free()
+	
+	# Get all users from DataManager
+	var users = DataManager.users
+	
+	# Create a row for each user if users exist
+	if users != null and not users.is_empty():
+		for user in users:
+			# Load the scene
+			var user_list_row_scene = load(userListRow_path)
+			
+			# Instantiate the scene
+			var user_list_row = user_list_row_scene.instantiate()
+			
+			# Set the user property on the instantiated scene
+			user_list_row.user = user
+			
+			# Add it as a child
+			add_child(user_list_row)
+
+func refresh_user_list():
+	create_user_list()
+
+func on_add_user(name):
+	# Reset text since it gets automaticly assigned to output string from keyboard input
+	addUserButton.text=\"\"
+	print(\"add user: \",name)
+	
+	DataManager.create_user(name)
+	
+	refresh_user_list()
+"
+
+[node name="SettingMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_il0w6")
+
+[node name="CurrentSceneContent" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_ewdve")
+
+[node name="HC" type="HBoxContainer" parent="CurrentSceneContent"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="SettingsPanel" type="Panel" parent="CurrentSceneContent/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.35
+
+[node name="VC" type="VBoxContainer" parent="CurrentSceneContent/HC/SettingsPanel"]
+layout_mode = 1
+anchors_preset = 13
+anchor_left = 0.5
+anchor_right = 0.5
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+alignment = 1
+script = SubResource("GDScript_fnnis")
+
+[node name="ButtonPanelUsers" type="Panel" parent="CurrentSceneContent/HC/SettingsPanel/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StyleBoxEmpty_18pn6")
+
+[node name="ManageUsersButton" type="Button" parent="CurrentSceneContent/HC/SettingsPanel/VC/ButtonPanelUsers"]
+custom_minimum_size = Vector2(180, 50)
+layout_mode = 1
+anchors_preset = 14
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_top = -16.5
+offset_bottom = 16.5
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+toggle_mode = true
+text = "Manage users"
+
+[node name="ButtonPanelShader" type="Panel" parent="CurrentSceneContent/HC/SettingsPanel/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StyleBoxEmpty_18pn6")
+
+[node name="ShaderSettingsButton" type="Button" parent="CurrentSceneContent/HC/SettingsPanel/VC/ButtonPanelShader"]
+custom_minimum_size = Vector2(180, 50)
+layout_mode = 1
+anchors_preset = 14
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_top = -16.5
+offset_bottom = 16.5
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+toggle_mode = true
+text = "Shader settings"
+
+[node name="ButtonPanelTODO" type="Panel" parent="CurrentSceneContent/HC/SettingsPanel/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StyleBoxEmpty_18pn6")
+
+[node name="TODOButton" type="Button" parent="CurrentSceneContent/HC/SettingsPanel/VC/ButtonPanelTODO"]
+custom_minimum_size = Vector2(180, 50)
+layout_mode = 1
+anchors_preset = 14
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_top = -16.5
+offset_bottom = 16.5
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+toggle_mode = true
+text = "TODO"
+
+[node name="SettingPopUpPanel" type="Panel" parent="CurrentSceneContent/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="MC" type="MarginContainer" parent="CurrentSceneContent/HC/SettingPopUpPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="AspectRatioContainer" type="AspectRatioContainer" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="TextureRectPlaceHolder" type="TextureRect" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/AspectRatioContainer"]
+layout_mode = 2
+texture = ExtResource("3_3vfxl")
+expand_mode = 1
+
+[node name="ManageUsersPanel" type="Panel" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC"]
+layout_mode = 2
+
+[node name="VC" type="VBoxContainer" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ManageUsersPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VC_UserList" type="VBoxContainer" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ManageUsersPanel/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+script = SubResource("GDScript_7qov3")
+
+[node name="AddUserButton" type="Button" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ManageUsersPanel/VC"]
+custom_minimum_size = Vector2(0, 35)
+layout_mode = 2
+icon = ExtResource("4_40nfb")
+icon_alignment = 1
+expand_icon = true
+script = ExtResource("5_bhcpc")
+keyboard_scene = ExtResource("6_t0uh8")
+placeholder_text = ""
+
+[node name="ShaderSettingsPanel" type="Panel" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC"]
+visible = false
+layout_mode = 2
+
+[node name="TODOPanel" type="Panel" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC"]
+visible = false
+layout_mode = 2

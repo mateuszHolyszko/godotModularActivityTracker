@@ -13,7 +13,6 @@ script/source = "extends Control
 @onready var ExerciseOrderLabel = $Panel/HC/ArrowPanel/HC/OrderNumberPanel/ExOrderLabel
 @onready var ExerciseButton = $Panel/HC/MainPanel/VC/TargetLabelPanel/ExerciseButton
 @onready var ExTypeOptionButton = $Panel/HC/MainPanel/VC/EditPanel/HC/ExTypePanel/VC/ExTypeOptionButton
-@onready var SuperSetOptionButton = $Panel/HC/MainPanel/VC/EditPanel/HC/SuperSetPanel/VC/SuperSetOptionButton
 @onready var DeleteButton = $Panel/HC/MainPanel/VC/EditPanel/HC/DelButton
 @onready var MainControl = $\"../../../../../../../..\"
 
@@ -28,7 +27,6 @@ func load_entry(p_entry: ProgramExerciseEntry, p_program: HypertrophyProgramReso
 	_load_order_label()
 	_load_exercise_button()
 	_load_ex_type_option()
-	_load_superset_option()
 
 	UpButton.disabled = entry.order == 0
 	DownButton.disabled = entry.order == program.entries.size() - 1
@@ -38,7 +36,6 @@ func load_entry(p_entry: ProgramExerciseEntry, p_program: HypertrophyProgramReso
 
 	# Connect option buttons — use item_selected which gives the index, not the id
 	ExTypeOptionButton.item_selected.connect(_on_ex_type_selected)
-	SuperSetOptionButton.item_selected.connect(_on_superset_selected)
 	DeleteButton.pressed.connect(_on_delete_pressed)
 
 
@@ -59,21 +56,6 @@ func _on_ex_type_selected(index: int) -> void:
 	# index matches enum value since we add items in enum order
 	entry.exercise_type = index
 	DataManager.save_program(program)
-
-
-func _on_superset_selected(index: int) -> void:
-	# Always remove any existing superset for this entry first
-	_clear_superset_for(entry.order)
-
-	var selected_id = SuperSetOptionButton.get_item_id(index)
-
-	# -1 means \"None\" — superset already cleared above, just save
-	if selected_id == -1:
-		DataManager.save_program(program)
-		return
-
-	# Add the new superset pair
-	DataManager.add_superset(program, entry.order, selected_id)
 
 
 # ---------------------------------------------------------------------------
@@ -140,31 +122,6 @@ func _load_ex_type_option() -> void:
 	ExTypeOptionButton.add_item(\"Myo Set\",      ProgramExerciseEntry.ExerciseType.MYO_SET)
 	ExTypeOptionButton.selected = entry.exercise_type
 
-
-func _load_superset_option() -> void:
-	SuperSetOptionButton.clear()
-	SuperSetOptionButton.add_item(\"None\", -1)
-
-	var sorted = program.get_sorted_entries()
-	for other in sorted:
-		if other.order == entry.order:
-			continue
-		if abs(other.order - entry.order) == 1:
-			SuperSetOptionButton.add_item(other.exercise.name, other.order)
-
-	var current_partner_order := -1
-	for pair in program.supersets:
-		if pair.order_a == entry.order:
-			current_partner_order = pair.order_b
-			break
-		elif pair.order_b == entry.order:
-			current_partner_order = pair.order_a
-			break
-
-	for i in SuperSetOptionButton.item_count:
-		if SuperSetOptionButton.get_item_id(i) == current_partner_order:
-			SuperSetOptionButton.selected = i
-			break
 "
 
 [node name="ProgramRow" type="Control"]
@@ -195,7 +152,7 @@ grow_vertical = 2
 theme_override_constants/separation = 0
 
 [node name="ArrowPanel" type="Panel" parent="Panel/HC"]
-custom_minimum_size = Vector2(100, 0)
+custom_minimum_size = Vector2(80, 0)
 layout_mode = 2
 size_flags_horizontal = 0
 
@@ -209,8 +166,8 @@ grow_vertical = 2
 theme_override_constants/separation = 0
 
 [node name="VC" type="VBoxContainer" parent="Panel/HC/ArrowPanel/HC"]
+custom_minimum_size = Vector2(35, 0)
 layout_mode = 2
-size_flags_horizontal = 3
 theme_override_constants/separation = 0
 
 [node name="UpButton" type="Button" parent="Panel/HC/ArrowPanel/HC/VC"]
@@ -323,39 +280,6 @@ popup/item_1/text = "DROP_SET"
 popup/item_1/id = 1
 popup/item_2/text = "MYO_SET"
 popup/item_2/id = 2
-
-[node name="SuperSetPanel" type="Panel" parent="Panel/HC/MainPanel/VC/EditPanel/HC"]
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="VC" type="VBoxContainer" parent="Panel/HC/MainPanel/VC/EditPanel/HC/SuperSetPanel"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-theme_override_constants/separation = 0
-
-[node name="LabelPanel" type="Panel" parent="Panel/HC/MainPanel/VC/EditPanel/HC/SuperSetPanel/VC"]
-layout_mode = 2
-size_flags_vertical = 3
-size_flags_stretch_ratio = 0.5
-
-[node name="Label" type="Label" parent="Panel/HC/MainPanel/VC/EditPanel/HC/SuperSetPanel/VC/LabelPanel"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-text = "Superset"
-horizontal_alignment = 1
-
-[node name="SuperSetOptionButton" type="OptionButton" parent="Panel/HC/MainPanel/VC/EditPanel/HC/SuperSetPanel/VC"]
-layout_mode = 2
-size_flags_vertical = 3
-alignment = 1
 
 [node name="DelButton" type="Button" parent="Panel/HC/MainPanel/VC/EditPanel/HC"]
 custom_minimum_size = Vector2(50, 0)

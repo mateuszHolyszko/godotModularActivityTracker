@@ -1,0 +1,215 @@
+[gd_scene load_steps=10 format=3 uid="uid://cvxy11411qg4b"]
+
+[ext_resource type="Theme" uid="uid://f6n2yykmqd16" path="res://assets/style/theme.tres" id="1_dvwu7"]
+[ext_resource type="Texture2D" uid="uid://cw7ge27wadr6t" path="res://assets/icons/unlink-svgrepo-com.svg" id="2_ltkal"]
+[ext_resource type="Texture2D" uid="uid://cieachpnmuni" path="res://assets/icons/trash-svgrepo-com.svg" id="3_4kfen"]
+[ext_resource type="Script" path="res://scenes/elements/KeyBoardInput/KeyboardInputButton.gd" id="3_4l7wm"]
+[ext_resource type="PackedScene" uid="uid://b8kt1prsxu3fy" path="res://scenes/elements/KeyBoardInput/keyBoardInput.tscn" id="4_m81p6"]
+
+[sub_resource type="GDScript" id="GDScript_e4det"]
+script/source = "extends Control
+@export var user: UserResource
+@onready var UserLabel = $Panel/HC/LabelPanel/UserLabel
+@onready var RenameButton = $Panel/HC/EditPanel/HC/RenamePanel/RenameButton
+@onready var DeleteButton = $Panel/HC/EditPanel/HC/DeletePanel/DeleteButton
+var custom_dialog_scene = preload(\"res://scenes/elements/ConfirmationCustomDialog/confirmationCustomDialog.tscn\") 
+var custom_dialog: CustomDialog
+
+func _ready():
+	UserLabel.text = user.name
+	
+	# Connect button signals
+	RenameButton.text_changed.connect(_on_rename_pressed)
+	DeleteButton.pressed.connect(_on_delete_pressed_with_confirmation)
+	DataManager.user_changed.connect(_on_user_changed)
+	
+	_on_user_changed( DataManager.current_user )
+
+func _on_rename_pressed(new_name):
+	RenameButton.text = \"\"
+	print(\"Rename button pressed for user: \", user.name, \" New Name: \", new_name)
+	
+	# Rename the user and persist to disk
+	user.name = new_name
+	DataManager.save_user(user)
+	UserLabel.text = new_name
+	
+	_refresh_parent_list()
+
+func _on_delete_pressed_with_confirmation():
+	# Instance custom dialog from scene
+	custom_dialog = custom_dialog_scene.instantiate()
+	
+	# Connect signals
+	custom_dialog.confirmed.connect(_confirm_delete)
+	custom_dialog.canceled.connect(_on_delete_canceled)
+	
+	# Add dialog to the scene
+	get_tree().current_scene.add_child(custom_dialog)
+	
+	# Show the dialog
+	custom_dialog.show_dialog(\"Delete User\", \"Are you sure you want to delete user: \" + user.name + \"?\")
+
+func _confirm_delete():
+	print(\"Deleting user: \", user.name)
+	
+	# Remove the .tres file from disk
+	var user_path = DataManager.USER_DIR + user.id + \".tres\"
+	DirAccess.remove_absolute(user_path)
+	
+	# Remove from the in-memory users array
+	DataManager.users.erase(user)
+	
+	# If this was the active user, clear the current_user
+	if DataManager.current_user == user:
+		DataManager.current_user = null
+	
+	# Remove this card from the scene
+	queue_free()
+	
+	_refresh_parent_list()
+
+func _on_delete_canceled():
+	print(\"Delete canceled for user: \", user.name)
+
+func _refresh_parent_list():
+	var parent_container = get_parent()
+	
+	if parent_container and parent_container.has_method(\"refresh_user_list\"):
+		parent_container.refresh_user_list()
+	else:
+		print(\"Parent container doesn't have refresh_user_list method\")
+
+func update_user_label(new_name: String):
+	UserLabel.text = new_name
+	
+func _on_user_changed(current_user):
+	#print(\" HEREEEE\")
+	if current_user == user:
+		RenameButton.disabled = true
+		DeleteButton.disabled = true
+	else:
+		RenameButton.disabled = false
+		DeleteButton.disabled = false
+"
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_w1n5h"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_7t3uj"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_rhx5u"]
+
+[node name="UserListRow" type="Control"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 3
+anchors_preset = 14
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+script = SubResource("GDScript_e4det")
+
+[node name="Panel" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("1_dvwu7")
+
+[node name="HC" type="HBoxContainer" parent="Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 0
+
+[node name="LabelPanel" type="Panel" parent="Panel/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="UserLabel" type="Label" parent="Panel/HC/LabelPanel"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -14.5
+offset_right = 20.0
+offset_bottom = 14.5
+grow_horizontal = 2
+grow_vertical = 2
+text = "User Name"
+
+[node name="EditPanel" type="Panel" parent="Panel/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.5
+
+[node name="HC" type="HBoxContainer" parent="Panel/HC/EditPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 0
+alignment = 1
+
+[node name="RenamePanel" type="Panel" parent="Panel/HC/EditPanel/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("StyleBoxEmpty_w1n5h")
+
+[node name="RenameButton" type="Button" parent="Panel/HC/EditPanel/HC/RenamePanel"]
+custom_minimum_size = Vector2(35, 35)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -2.0
+offset_top = -2.0
+offset_right = 2.0
+offset_bottom = 2.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/normal = SubResource("StyleBoxEmpty_7t3uj")
+icon = ExtResource("2_ltkal")
+icon_alignment = 1
+expand_icon = true
+script = ExtResource("3_4l7wm")
+keyboard_scene = ExtResource("4_m81p6")
+placeholder_text = ""
+
+[node name="DeletePanel" type="Panel" parent="Panel/HC/EditPanel/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("StyleBoxEmpty_rhx5u")
+
+[node name="DeleteButton" type="Button" parent="Panel/HC/EditPanel/HC/DeletePanel"]
+custom_minimum_size = Vector2(35, 35)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -2.0
+offset_top = -2.0
+offset_right = 2.0
+offset_bottom = 2.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/normal = SubResource("StyleBoxEmpty_7t3uj")
+icon = ExtResource("3_4kfen")
+icon_alignment = 1
+expand_icon = true

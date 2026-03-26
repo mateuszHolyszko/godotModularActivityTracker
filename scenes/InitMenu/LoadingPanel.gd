@@ -5,12 +5,14 @@ var user_mesurment_menu := Menu.new("user_mesurment_menu", "res://scenes/Overvie
 var session_menu := Menu.new("session_menu", "res://scenes/SessionMenu/sessionMenu.tscn")
 var program_menu := Menu.new("program_menu", "res://scenes/ProgramMenu/programMenu.tscn",true)
 var data_menu := Menu.new("data_menu", "res://scenes/DataMenu/dataMenu.tscn")
+var settings_menu := Menu.new("settings_menu", "res://scenes/SettingsMenu/settingMenu.tscn")
 
 @onready var overview_bar: ProgressBar = $MC/VC/OverviewPanel/HC/OverviewBar
 @onready var model_3d_bar: ProgressBar = $MC/VC/Models3dPanel/HC/Models3dBar
 @onready var session_bar: ProgressBar = $MC/VC/SessionPanel/HC/SessionBar
 @onready var program_bar: ProgressBar = $MC/VC/ProgramPanel2/HC/ProgramBar
 @onready var data_bar: ProgressBar = $MC/VC/DataPanel/HC/DataBar
+@onready var settings_bar: ProgressBar = $MC/VC/SettingsPanel/HC/SettingsBar
 
 func _ready() -> void:
 	# Wait for DataManager's ready signal
@@ -22,7 +24,8 @@ func _ready() -> void:
 	SceneRegistry3d.load_completed.connect(func(_s): _setup_menu_barless(session_menu))
 	session_menu.load_completed.connect(func(_s): _setup_menu(program_menu, program_bar))
 	program_menu.load_completed.connect(func(_s): _setup_menu(data_menu, data_bar))
-	data_menu.load_completed.connect(func(_s): _after_all_loaded() )
+	data_menu.load_completed.connect(func(_s): _setup_menu(settings_menu, settings_bar) )
+	settings_menu.load_completed.connect(func(_s): _after_all_loaded() )
 
 func _setup_menu(menu: Menu, bar: ProgressBar) -> void:
 	bar.min_value = 0.0

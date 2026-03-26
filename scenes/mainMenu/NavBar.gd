@@ -8,6 +8,8 @@ extends PanelContainer
 @onready var program = $HBoxContainer/Program
 @onready var data = $HBoxContainer/Data
 
+@onready var settings = $HBoxContainer/SettingsBattery/HC/SettingButton
+
 
 func _ready():
 	#==Clock==
@@ -81,3 +83,13 @@ func _on_program_pressed():
 	MenuManager.toggle_nav_buttons_pressed(false)
 	program.button_pressed=true
 	#program.grab_focus()
+
+
+func _on_setting_button_pressed():
+	# Check if we are already here
+	if MenuManager._active_menu_name == "settings_menu":
+		settings.button_pressed=true
+		return
+	MenuManager.change_menu("settings_menu")
+	MenuManager.toggle_nav_buttons_pressed(false)
+	settings.button_pressed=true

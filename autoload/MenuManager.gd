@@ -145,6 +145,10 @@ func toggle_nav_buttons_pressed(pressed: bool) -> void:
 		if child is Button:
 			child.button_pressed = pressed
 
+	var user_button = nav_bar.get_node("HBoxContainer/SettingsBattery/HC/SettingButton")
+	if user_button:
+		user_button.button_pressed = pressed
+
 func play_refresh_animation():
 
 	if transition_rect:

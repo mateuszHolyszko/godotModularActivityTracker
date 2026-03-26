@@ -96,5 +96,5 @@ weight = 74.5
 [resource]
 script = ExtResource("1_5adie")
 id = "1773426420.836"
-name = "test1"
+name = "TEST TWO"
 measurements = Array[ExtResource("1_glbsj")]([SubResource("Resource_me7tn"), SubResource("Resource_fmrtg"), SubResource("Resource_se8yi"), SubResource("Resource_umup7"), SubResource("Resource_pli60"), SubResource("Resource_35smx"), SubResource("Resource_y23k0"), SubResource("Resource_al7lr"), SubResource("Resource_yxkxr"), SubResource("Resource_syyxv")])

@@ -265,6 +265,7 @@ alignment = 1
 custom_minimum_size = Vector2(35, 35)
 layout_mode = 2
 size_flags_vertical = 4
+toggle_mode = true
 icon = ExtResource("4_ybce0")
 expand_icon = true
 
@@ -402,3 +403,4 @@ color = Color(0.0784314, 0.0784314, 0.0784314, 1)
 [connection signal="pressed" from="NavBar/HBoxContainer/Program" to="NavBar" method="_on_program_pressed"]
 [connection signal="pressed" from="NavBar/HBoxContainer/Data" to="NavBar" method="_on_data_pressed"]
 [connection signal="pressed" from="NavBar/HBoxContainer/UserSelect/VC/UserButton" to="." method="_on_user_button_pressed"]
+[connection signal="pressed" from="NavBar/HBoxContainer/SettingsBattery/HC/SettingButton" to="NavBar" method="_on_setting_button_pressed"]

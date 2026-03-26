@@ -472,16 +472,19 @@ theme_override_constants/separation = 0
 script = SubResource("GDScript_g04nq")
 
 [node name="AspectRatioContainer" type="AspectRatioContainer" parent="CurrentSceneContent/MC/HC/RightPanel"]
+custom_minimum_size = Vector2(360, 360)
 layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
 grow_horizontal = 2
 grow_vertical = 2
 
 [node name="TextureRect" type="TextureRect" parent="CurrentSceneContent/MC/HC/RightPanel/AspectRatioContainer"]
 layout_mode = 2
 texture = ExtResource("5_nm1fp")
-expand_mode = 2
+expand_mode = 1
 
 [connection signal="text_changed" from="CurrentSceneContent/MC/HC/LeftPanel/VC/ProgramListPanel/VC/AddProgramButton" to="CurrentSceneContent/MC/HC/LeftPanel/VC/ProgramListPanel" method="_on_add_program_button_text_changed"]
