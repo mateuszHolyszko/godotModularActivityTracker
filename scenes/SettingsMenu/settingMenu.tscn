@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3 uid="uid://mvnu36dn1njm"]
+[gd_scene load_steps=17 format=3 uid="uid://mvnu36dn1njm"]
 
 [ext_resource type="Script" path="res://scenes/SettingsMenu/settingMenu.gd" id="1_il0w6"]
 [ext_resource type="Theme" uid="uid://f6n2yykmqd16" path="res://assets/style/theme.tres" id="2_ewdve"]
@@ -6,6 +6,7 @@
 [ext_resource type="Texture2D" uid="uid://ckxu85xwh7omx" path="res://assets/icons/add-box-svgrepo-com.svg" id="4_40nfb"]
 [ext_resource type="Script" path="res://scenes/elements/KeyBoardInput/KeyboardInputButton.gd" id="5_bhcpc"]
 [ext_resource type="PackedScene" uid="uid://b8kt1prsxu3fy" path="res://scenes/elements/KeyBoardInput/keyBoardInput.tscn" id="6_t0uh8"]
+[ext_resource type="Script" path="res://scenes/elements/valueInput/ValueInput.gd" id="7_8ww77"]
 
 [sub_resource type="GDScript" id="GDScript_fnnis"]
 script/source = "extends VBoxContainer
@@ -16,8 +17,9 @@ script/source = "extends VBoxContainer
 @onready var ShaderSettingsButton = $ButtonPanelShader/ShaderSettingsButton
 @onready var ShaderSettingsPanel = $\"../../SettingPopUpPanel/MC/ShaderSettingsPanel\"
 
-@onready var TODOButton = $ButtonPanelTODO/TODOButton
-@onready var TODOPanel = $\"../../SettingPopUpPanel/MC/TODOPanel\"
+@onready var GeneralSettingsButton = $ButtonPanelGeneral/GeneralSettingsButton
+@onready var GeneralSettingsPanel = $\"../../SettingPopUpPanel/MC/GeneralSettingsPanel\"
+
 
 var activeSetting: Panel = null
 var activeButton: Button = null
@@ -26,12 +28,11 @@ func _ready():
 	# Set all buttons to toggle mode
 	ManageUsersButton.toggle_mode = true
 	ShaderSettingsButton.toggle_mode = true
-	TODOButton.toggle_mode = true
 	
 	# Connect toggled signals
 	ManageUsersButton.toggled.connect(_on_manage_users_toggled)
 	ShaderSettingsButton.toggled.connect(_on_shader_settings_toggled)
-	TODOButton.toggled.connect(_on_todo_toggled)
+	GeneralSettingsButton.toggled.connect(_on_general_settings_toggled)
 	
 	# Initially hide all panels
 	hide_all_panels()
@@ -39,13 +40,13 @@ func _ready():
 func hide_all_panels():
 	ManageUsersPanel.hide()
 	ShaderSettingsPanel.hide()
-	TODOPanel.hide()
+	GeneralSettingsPanel.hide()
 	activeSetting = null
 
 func unpress_all_buttons():
 	ManageUsersButton.set_pressed_no_signal(false)
 	ShaderSettingsButton.set_pressed_no_signal(false)
-	TODOButton.set_pressed_no_signal(false)
+	GeneralSettingsButton.set_pressed_no_signal(false)
 	activeButton = null
 
 func _on_manage_users_toggled(toggled_on: bool):
@@ -86,22 +87,22 @@ func _on_shader_settings_toggled(toggled_on: bool):
 			hide_all_panels()
 			activeButton = null
 
-func _on_todo_toggled(toggled_on: bool):
+func _on_general_settings_toggled(toggled_on: bool):
 	if toggled_on:
 		# Unpress all other buttons
 		unpress_all_buttons()
 		
 		# Set this button as active
-		TODOButton.set_pressed_no_signal(true)
-		activeButton = TODOButton
+		GeneralSettingsButton.set_pressed_no_signal(true)
+		activeButton = GeneralSettingsButton
 		
 		# Hide all panels and show the selected one
 		hide_all_panels()
-		TODOPanel.show()
-		activeSetting = TODOPanel
+		GeneralSettingsPanel.show()
+		activeSetting = GeneralSettingsPanel
 	else:
 		# If this button is being toggled off
-		if activeButton == TODOButton:
+		if activeButton == GeneralSettingsButton:
 			hide_all_panels()
 			activeButton = null
 
@@ -156,6 +157,397 @@ func on_add_user(name):
 	DataManager.create_user(name)
 	
 	refresh_user_list()
+"
+
+[sub_resource type="GDScript" id="GDScript_j0lx5"]
+script/source = "extends HBoxContainer
+
+@onready var SwitchShaderButton = $ToggleShadersButton
+@onready var ShaderStateLabel = $LabelShaderState
+
+func _ready():
+	# Set initial label to reflect current saved state
+	_update_label(SettingsGlobal.get_shader_enabled())
+	
+	# Connect button press to toggle function
+	SwitchShaderButton.pressed.connect(_on_toggle_shaders_pressed)
+	
+	# Listen to SettingsGlobal signal so the label stays in sync
+	# even if something else changes the shader state
+	SettingsGlobal.shader_toggled.connect(_on_shader_toggled)
+
+func _on_toggle_shaders_pressed():
+	var new_state = not SettingsGlobal.get_shader_enabled()
+	SettingsGlobal.set_shader_enabled(new_state)
+	# set_shader_enabled() emits shader_toggled, which drives everything below
+
+func _on_shader_toggled(shader_enabled: bool):
+	# Apply visibility to the canvas layer (stops GPU draw calls)
+	if SettingsGlobal.render_canvas_layer:
+		SettingsGlobal.render_canvas_layer.visible = shader_enabled
+	_update_label(shader_enabled)
+
+func _update_label(shader_enabled: bool):
+	ShaderStateLabel.text = \"Shaders: ON\" if shader_enabled else \"Shaders: OFF\"
+"
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_2aba3"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_ydxhv"]
+
+[sub_resource type="GDScript" id="GDScript_sa2lb"]
+script/source = "extends VBoxContainer
+
+# References to custom InputValue components
+@onready var bleed_strength_input = $HC/VC/HC/BleedStrengthInput
+@onready var bleed_strength_range = $HC/VC/HC/BleedStrengthRange
+@onready var brightness_threshold_input = $HC/VC/HC2/BrightnessThresholdInput
+@onready var brightness_threshold_range = $HC/VC/HC2/BrightnessThresholdRange
+@onready var shift_multiplier_input = $HC/VC/HC3/ShiftMultiplierInput
+@onready var shift_multiplier_range = $HC/VC/HC3/ShiftMultiplierRange
+
+@onready var reset_button = $HC/ResetButton
+
+func _ready():
+	# Configure InputValue components with their ranges
+	_setup_input_components()
+	
+	# Connect signals
+	_connect_signals()
+	
+	# Load current settings
+	_load_current_settings()
+
+func _setup_input_components():
+	# Bleed Strength: 0.0 - 2.0, step 0.01
+	bleed_strength_input.min_value = 0.0
+	bleed_strength_input.max_value = 2.0
+	bleed_strength_input.step = 0.01
+	bleed_strength_range.text = \"0-2\"
+	
+	# Brightness Threshold: 0.0 - 1.0, step 0.01
+	brightness_threshold_input.min_value = 0.0
+	brightness_threshold_input.max_value = 1.0
+	brightness_threshold_input.step = 0.01
+	brightness_threshold_range.text = \"0-1\"
+	
+	# Shift Multiplier: 1.0 - 16.0, step 0.1
+	shift_multiplier_input.min_value = 1.0
+	shift_multiplier_input.max_value = 16.0
+	shift_multiplier_input.step = 0.1
+	shift_multiplier_range.text = \"1-16\"
+
+func _connect_signals():
+	# Connect value_confirmed signals (fires when user confirms the value)
+	bleed_strength_input.value_confirmed.connect(_on_bleed_strength_confirmed)
+	brightness_threshold_input.value_confirmed.connect(_on_brightness_threshold_confirmed)
+	shift_multiplier_input.value_confirmed.connect(_on_shift_multiplier_confirmed)
+	
+	# Reset button
+	reset_button.pressed.connect(_on_reset_pressed)
+
+func _load_current_settings():
+	# Load current values from SettingsGlobal into InputValue components
+	bleed_strength_input.value = SettingsGlobal.get_bleed_strength()
+	bleed_strength_input.update_text()
+	brightness_threshold_input.value = SettingsGlobal.get_brightness_threshold()
+	brightness_threshold_input.update_text()
+	shift_multiplier_input.value = SettingsGlobal.get_shift_multiplier()
+	shift_multiplier_input.update_text()
+
+# ========== VALUE CONFIRMED HANDLERS ==========
+
+func _on_bleed_strength_confirmed(value: float):
+	SettingsGlobal.set_bleed_strength(value)
+	print(\"Bleed strength set to: \", value)
+
+func _on_brightness_threshold_confirmed(value: float):
+	SettingsGlobal.set_brightness_threshold(value)
+	print(\"Brightness threshold set to: \", value)
+
+func _on_shift_multiplier_confirmed(value: float):
+	SettingsGlobal.set_shift_multiplier(value)
+	print(\"Shift multiplier set to: \", value)
+
+# ========== RESET FUNCTION ==========
+
+func _on_reset_pressed():
+	# Reset to default values from SettingsGlobal constants
+	var defaults = SettingsGlobal.DEFAULT_BLEED_SETTINGS
+	
+	bleed_strength_input.value = defaults[\"bleed_strength\"]
+	brightness_threshold_input.value = defaults[\"brightness_threshold\"]
+	shift_multiplier_input.value = defaults[\"shift_multiplier\"]
+	bleed_strength_input.update_text()
+	brightness_threshold_input.update_text()
+	shift_multiplier_input.update_text()
+	
+	# Update settings with the reset values
+	SettingsGlobal.set_bleed_strength(defaults[\"bleed_strength\"])
+	SettingsGlobal.set_brightness_threshold(defaults[\"brightness_threshold\"])
+	SettingsGlobal.set_shift_multiplier(defaults[\"shift_multiplier\"])
+	
+	print(\"Bleed shader settings reset to defaults\")
+"
+
+[sub_resource type="GDScript" id="GDScript_k7jpj"]
+script/source = "extends VBoxContainer
+
+# References to custom InputValue components
+@onready var intensity_input = $HC/VC/HC/IntensityInput
+@onready var intensity_range = $HC/VC/HC/IntensityRange
+@onready var scanline_thickness_input = $HC/VC/HC2/ScanlineThicknessInput
+@onready var scanline_thickness_range = $HC/VC/HC2/ScanlineThicknessRange
+@onready var scanline_darkness_input = $HC/VC/HC3/ScanlineDarknessInput
+@onready var scanline_darkness_range = $HC/VC/HC3/ScanlineDarknessRange
+@onready var phosphor_thickness_input = $HC/VC/HC4/PhosphorThicknessInput
+@onready var phosphor_thickness_range = $HC/VC/HC4/PhosphorThicknessRange
+@onready var phosphor_strength_input = $HC/VC/HC5/PhosphorStrengthInput
+@onready var phosphor_strength_range = $HC/VC/HC5/PhosphorStrengthRange
+@onready var flicker_speed_input = $HC/VC/HC6/FlickerSpeedInput
+@onready var flicker_speed_range = $HC/VC/HC6/FlickerSpeedRange
+@onready var flicker_strength_input = $HC/VC/HC7/FlickerStrengthInput
+@onready var flicker_strength_range = $HC/VC/HC7/FlickerStrengthRange
+@onready var reset_button = $HC/ResetButton
+
+func _ready():
+	# Configure InputValue components with their ranges
+	_setup_input_components()
+	
+	# Connect signals
+	_connect_signals()
+	
+	# Load current settings
+	_load_current_settings()
+
+func _setup_input_components():
+	# Intensity: range from your shader defaults
+	intensity_input.min_value = 0.0
+	intensity_input.max_value = 2.0
+	intensity_input.step = 0.01
+	intensity_range.text = \"0-2\"
+	
+	# Scanline Thickness: 0.5 - 0.9
+	scanline_thickness_input.min_value = 0.5
+	scanline_thickness_input.max_value = 0.9
+	scanline_thickness_input.step = 0.01
+	scanline_thickness_range.text = \"0.5-0.9\"
+	
+	# Scanline Darkness: 0.2 - 0.5
+	scanline_darkness_input.min_value = 0.2
+	scanline_darkness_input.max_value = 0.5
+	scanline_darkness_input.step = 0.01
+	scanline_darkness_range.text = \"0.2-0.5\"
+	
+	# Phosphor Thickness: 1.5 - 3.0
+	phosphor_thickness_input.min_value = 1.5
+	phosphor_thickness_input.max_value = 3.0
+	phosphor_thickness_input.step = 0.01
+	phosphor_thickness_range.text = \"1.5-3\"
+	
+	# Phosphor Strength: 0.05 - 0.25
+	phosphor_strength_input.min_value = 0.05
+	phosphor_strength_input.max_value = 0.25
+	phosphor_strength_input.step = 0.01
+	phosphor_strength_range.text = \".05-.25\"
+	
+	# Flicker Speed: 40 - 150
+	flicker_speed_input.min_value = 40.0
+	flicker_speed_input.max_value = 150.0
+	flicker_speed_input.step = 1.0
+	flicker_speed_range.text = \"40-150\"
+	
+	# Flicker Strength: 0.01 - 0.05
+	flicker_strength_input.min_value = 0.01
+	flicker_strength_input.max_value = 0.05
+	flicker_strength_input.step = 0.001
+	flicker_strength_range.text = \".01-.05\"
+
+func _connect_signals():
+	# Connect value_confirmed signals for all CRT parameters
+	intensity_input.value_confirmed.connect(_on_intensity_confirmed)
+	scanline_thickness_input.value_confirmed.connect(_on_scanline_thickness_confirmed)
+	scanline_darkness_input.value_confirmed.connect(_on_scanline_darkness_confirmed)
+	phosphor_thickness_input.value_confirmed.connect(_on_phosphor_thickness_confirmed)
+	phosphor_strength_input.value_confirmed.connect(_on_phosphor_strength_confirmed)
+	flicker_speed_input.value_confirmed.connect(_on_flicker_speed_confirmed)
+	flicker_strength_input.value_confirmed.connect(_on_flicker_strength_confirmed)
+	
+	# Reset button
+	reset_button.pressed.connect(_on_reset_pressed)
+
+func _load_current_settings():
+	# Load current values from SettingsGlobal into InputValue components
+	intensity_input.value = SettingsGlobal.get_crt_intensity()
+	intensity_input.update_text()
+	
+	scanline_thickness_input.value = SettingsGlobal.get_scanline_thickness()
+	scanline_thickness_input.update_text()
+	
+	scanline_darkness_input.value = SettingsGlobal.get_scanline_darkness()
+	scanline_darkness_input.update_text()
+	
+	phosphor_thickness_input.value = SettingsGlobal.get_phosphor_thickness()
+	phosphor_thickness_input.update_text()
+	
+	phosphor_strength_input.value = SettingsGlobal.get_phosphor_strength()
+	phosphor_strength_input.update_text()
+	
+	flicker_speed_input.value = SettingsGlobal.get_flicker_speed()
+	flicker_speed_input.update_text()
+	
+	flicker_strength_input.value = SettingsGlobal.get_flicker_strength()
+	flicker_strength_input.update_text()
+
+# ========== VALUE CONFIRMED HANDLERS ==========
+
+func _on_intensity_confirmed(value: float):
+	SettingsGlobal.set_crt_intensity(value)
+	print(\"CRT intensity set to: \", value)
+
+func _on_scanline_thickness_confirmed(value: float):
+	SettingsGlobal.set_scanline_thickness(value)
+	print(\"Scanline thickness set to: \", value)
+
+func _on_scanline_darkness_confirmed(value: float):
+	SettingsGlobal.set_scanline_darkness(value)
+	print(\"Scanline darkness set to: \", value)
+
+func _on_phosphor_thickness_confirmed(value: float):
+	SettingsGlobal.set_phosphor_thickness(value)
+	print(\"Phosphor thickness set to: \", value)
+
+func _on_phosphor_strength_confirmed(value: float):
+	SettingsGlobal.set_phosphor_strength(value)
+	print(\"Phosphor strength set to: \", value)
+
+func _on_flicker_speed_confirmed(value: float):
+	SettingsGlobal.set_flicker_speed(value)
+	print(\"Flicker speed set to: \", value)
+
+func _on_flicker_strength_confirmed(value: float):
+	SettingsGlobal.set_flicker_strength(value)
+	print(\"Flicker strength set to: \", value)
+
+# ========== RESET FUNCTION ==========
+
+func _on_reset_pressed():
+	# Reset to default values from SettingsGlobal constants
+	var defaults = SettingsGlobal.DEFAULT_CRT_SETTINGS
+	
+	intensity_input.value = defaults[\"intensity\"]
+	intensity_input.update_text()
+	
+	scanline_thickness_input.value = defaults[\"scanline_thickness\"]
+	scanline_thickness_input.update_text()
+	
+	scanline_darkness_input.value = defaults[\"scanline_darkness\"]
+	scanline_darkness_input.update_text()
+	
+	phosphor_thickness_input.value = defaults[\"phosphor_thickness\"]
+	phosphor_thickness_input.update_text()
+	
+	phosphor_strength_input.value = defaults[\"phosphor_strength\"]
+	phosphor_strength_input.update_text()
+	
+	flicker_speed_input.value = defaults[\"flicker_speed\"]
+	flicker_speed_input.update_text()
+	
+	flicker_strength_input.value = defaults[\"flicker_strength\"]
+	flicker_strength_input.update_text()
+	
+	# Update settings with the reset values
+	SettingsGlobal.set_crt_intensity(defaults[\"intensity\"])
+	SettingsGlobal.set_scanline_thickness(defaults[\"scanline_thickness\"])
+	SettingsGlobal.set_scanline_darkness(defaults[\"scanline_darkness\"])
+	SettingsGlobal.set_phosphor_thickness(defaults[\"phosphor_thickness\"])
+	SettingsGlobal.set_phosphor_strength(defaults[\"phosphor_strength\"])
+	SettingsGlobal.set_flicker_speed(defaults[\"flicker_speed\"])
+	SettingsGlobal.set_flicker_strength(defaults[\"flicker_strength\"])
+	
+	print(\"CRT shader settings reset to defaults\")
+"
+
+[sub_resource type="GDScript" id="GDScript_1xyqn"]
+script/source = "extends VBoxContainer
+
+@onready var resolutionOptionButton = $Option3/OptionButton # options items : [1280x720, 800x480, 640x480, 480x320]
+@onready var shaderTextRatioOptionButton = $Option4/OptionButton # options items : [1:1, 1:2, 1:4]
+
+func _ready():
+	_connect_signals()
+	_load_current_settings()
+
+func _connect_signals():
+	resolutionOptionButton.item_selected.connect(_on_resolution_selected)
+	shaderTextRatioOptionButton.item_selected.connect(_on_text_scale_selected)
+
+func _load_current_settings():
+	# Load current resolution
+	var current_resolution = SettingsGlobal.get_resolution()
+	var resolution_text = str(current_resolution.x) + \"x\" + str(current_resolution.y)
+	
+	# Find and select the matching resolution option
+	var resolution_index = _find_item_by_text(resolutionOptionButton, resolution_text)
+	if resolution_index != -1:
+		resolutionOptionButton.select(resolution_index)
+	else:
+		print(\"Warning: Current resolution not in options: \", resolution_text)
+	
+	# Load current text scale
+	var current_scale = SettingsGlobal.get_shader_text_scale()
+	var scale_text = \"1:\" + str(current_scale)
+	
+	# Find and select the matching text scale option
+	var scale_index = _find_item_by_text(shaderTextRatioOptionButton, scale_text)
+	if scale_index != -1:
+		shaderTextRatioOptionButton.select(scale_index)
+	else:
+		print(\"Warning: Current text scale not in options: \", scale_text)
+
+func _find_item_by_text(option_button: OptionButton, text: String) -> int:
+	\"\"\"Find the index of an item by its text\"\"\"
+	for i in range(option_button.get_item_count()):
+		if option_button.get_item_text(i) == text:
+			return i
+	return -1
+
+func _parse_resolution(text: String) -> Vector2i:
+	\"\"\"Parse resolution string like '1280x720' into Vector2i\"\"\"
+	var parts = text.split(\"x\")
+	if parts.size() == 2:
+		return Vector2i(int(parts[0]), int(parts[1]))
+	return Vector2i(800, 480)  # Default fallback
+
+func _parse_text_scale(text: String) -> int:
+	\"\"\"Parse text scale string like '1:2' into integer scale\"\"\"
+	var parts = text.split(\":\")
+	if parts.size() == 2:
+		return int(parts[1])
+	return 1  # Default fallback
+
+# ========== SIGNAL HANDLERS ==========
+
+func _on_resolution_selected(index: int):
+	\"\"\"Called when a resolution is selected from the dropdown\"\"\"
+	var selected_text = resolutionOptionButton.get_item_text(index)
+	var new_resolution = _parse_resolution(selected_text)
+	
+	SettingsGlobal.set_resolution(new_resolution)
+	
+	# Apply resolution immediately
+	DisplayServer.window_set_size(new_resolution)
+	
+	print(\"Resolution set to: \", selected_text)
+
+func _on_text_scale_selected(index: int):
+	\"\"\"Called when a text scale is selected from the dropdown\"\"\"
+	var selected_text = shaderTextRatioOptionButton.get_item_text(index)
+	var new_scale = _parse_text_scale(selected_text)
+	
+	SettingsGlobal.set_shader_text_scale(new_scale)
+	
+	print(\"Shader text scale set to: \", selected_text)
 "
 
 [node name="SettingMenu" type="Control"]
@@ -240,12 +632,12 @@ size_flags_horizontal = 3
 toggle_mode = true
 text = "Shader settings"
 
-[node name="ButtonPanelTODO" type="Panel" parent="CurrentSceneContent/HC/SettingsPanel/VC"]
+[node name="ButtonPanelGeneral" type="Panel" parent="CurrentSceneContent/HC/SettingsPanel/VC"]
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_styles/panel = SubResource("StyleBoxEmpty_18pn6")
 
-[node name="TODOButton" type="Button" parent="CurrentSceneContent/HC/SettingsPanel/VC/ButtonPanelTODO"]
+[node name="GeneralSettingsButton" type="Button" parent="CurrentSceneContent/HC/SettingsPanel/VC/ButtonPanelGeneral"]
 custom_minimum_size = Vector2(180, 50)
 layout_mode = 1
 anchors_preset = 14
@@ -258,7 +650,7 @@ grow_horizontal = 2
 grow_vertical = 2
 size_flags_horizontal = 3
 toggle_mode = true
-text = "TODO"
+text = "General settings"
 
 [node name="SettingPopUpPanel" type="Panel" parent="CurrentSceneContent/HC"]
 layout_mode = 2
@@ -286,6 +678,7 @@ texture = ExtResource("3_3vfxl")
 expand_mode = 1
 
 [node name="ManageUsersPanel" type="Panel" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC"]
+visible = false
 layout_mode = 2
 
 [node name="VC" type="VBoxContainer" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ManageUsersPanel"]
@@ -315,6 +708,651 @@ placeholder_text = ""
 visible = false
 layout_mode = 2
 
-[node name="TODOPanel" type="Panel" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC"]
-visible = false
+[node name="VC" type="VBoxContainer" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 0
+
+[node name="HC" type="HBoxContainer" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC"]
 layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 6
+size_flags_stretch_ratio = 0.2
+script = SubResource("GDScript_j0lx5")
+
+[node name="ShaderToggleStateLabel" type="Label" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/HC"]
+custom_minimum_size = Vector2(130, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 1
+text = "Shaders
+"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ToggleShadersButton" type="Button" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/HC"]
+layout_mode = 2
+size_flags_horizontal = 6
+size_flags_vertical = 4
+theme_override_font_sizes/font_size = 20
+text = "Toggle"
+
+[node name="LabelShaderState" type="Label" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/HC"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.478431, 0.478431, 0.478431, 1)
+theme_override_font_sizes/font_size = 20
+text = "on/off"
+
+[node name="OptionPanel2" type="Panel" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_stretch_ratio = 0.55
+theme_override_styles/panel = SubResource("StyleBoxEmpty_2aba3")
+
+[node name="HC" type="HBoxContainer" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel2"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="LabelPanel" type="Panel" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel2/HC"]
+custom_minimum_size = Vector2(130, 0)
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_stretch_ratio = 0.5
+theme_override_styles/panel = SubResource("StyleBoxEmpty_ydxhv")
+
+[node name="Label" type="Label" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel2/HC/LabelPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = -3.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "Bleed 
+shader
+parameters"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="BleedParametersContainer" type="VBoxContainer" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel2/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+alignment = 1
+script = SubResource("GDScript_sa2lb")
+
+[node name="HC" type="HBoxContainer" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel2/HC/BleedParametersContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="VC" type="VBoxContainer" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel2/HC/BleedParametersContainer/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+alignment = 1
+
+[node name="HC" type="HBoxContainer" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel2/HC/BleedParametersContainer/HC/VC"]
+layout_mode = 2
+alignment = 1
+
+[node name="Label" type="Label" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel2/HC/BleedParametersContainer/HC/VC/HC"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Bleed Strength:"
+
+[node name="HSeparator" type="HSeparator" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel2/HC/BleedParametersContainer/HC/VC/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="BleedStrengthInput" type="Button" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel2/HC/BleedParametersContainer/HC/VC/HC"]
+custom_minimum_size = Vector2(80, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+script = ExtResource("7_8ww77")
+
+[node name="BleedStrengthRange" type="Label" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel2/HC/BleedParametersContainer/HC/VC/HC"]
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_colors/font_color = Color(0.478431, 0.478431, 0.478431, 1)
+theme_override_font_sizes/font_size = 16
+text = "B-T"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HC2" type="HBoxContainer" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel2/HC/BleedParametersContainer/HC/VC"]
+layout_mode = 2
+alignment = 1
+
+[node name="Label" type="Label" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel2/HC/BleedParametersContainer/HC/VC/HC2"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Brightness Thresh:"
+
+[node name="HSeparator" type="HSeparator" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel2/HC/BleedParametersContainer/HC/VC/HC2"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="BrightnessThresholdInput" type="Button" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel2/HC/BleedParametersContainer/HC/VC/HC2"]
+custom_minimum_size = Vector2(80, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+script = ExtResource("7_8ww77")
+
+[node name="BrightnessThresholdRange" type="Label" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel2/HC/BleedParametersContainer/HC/VC/HC2"]
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_colors/font_color = Color(0.478431, 0.478431, 0.478431, 1)
+theme_override_font_sizes/font_size = 16
+text = "B-T"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HC3" type="HBoxContainer" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel2/HC/BleedParametersContainer/HC/VC"]
+layout_mode = 2
+alignment = 1
+
+[node name="Label" type="Label" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel2/HC/BleedParametersContainer/HC/VC/HC3"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Shift Multiplier:"
+
+[node name="HSeparator" type="HSeparator" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel2/HC/BleedParametersContainer/HC/VC/HC3"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ShiftMultiplierInput" type="Button" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel2/HC/BleedParametersContainer/HC/VC/HC3"]
+custom_minimum_size = Vector2(80, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+script = ExtResource("7_8ww77")
+
+[node name="ShiftMultiplierRange" type="Label" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel2/HC/BleedParametersContainer/HC/VC/HC3"]
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_colors/font_color = Color(0.478431, 0.478431, 0.478431, 1)
+theme_override_font_sizes/font_size = 16
+text = "B-T"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel2/HC/BleedParametersContainer/HC"]
+custom_minimum_size = Vector2(15, 0)
+layout_mode = 2
+
+[node name="ResetButton" type="Button" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel2/HC/BleedParametersContainer/HC"]
+custom_minimum_size = Vector2(25, 25)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+size_flags_stretch_ratio = 0.2
+theme_override_font_sizes/font_size = 22
+text = "R
+E
+S
+E
+T"
+
+[node name="HSeparator2" type="HSeparator" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel2/HC/BleedParametersContainer/HC"]
+custom_minimum_size = Vector2(30, 0)
+layout_mode = 2
+
+[node name="OptionPanel3" type="Panel" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StyleBoxEmpty_2aba3")
+
+[node name="HC" type="HBoxContainer" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel3"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="LabelPanel" type="Panel" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel3/HC"]
+custom_minimum_size = Vector2(130, 0)
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_stretch_ratio = 0.5
+theme_override_styles/panel = SubResource("StyleBoxEmpty_ydxhv")
+
+[node name="Label" type="Label" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel3/HC/LabelPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "CRT
+shader
+parameters"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="CRTParametersConteiner" type="VBoxContainer" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel3/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+alignment = 1
+script = SubResource("GDScript_k7jpj")
+
+[node name="HC" type="HBoxContainer" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel3/HC/CRTParametersConteiner"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="VC" type="VBoxContainer" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel3/HC/CRTParametersConteiner/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+alignment = 1
+
+[node name="HC" type="HBoxContainer" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel3/HC/CRTParametersConteiner/HC/VC"]
+layout_mode = 2
+alignment = 1
+
+[node name="Label" type="Label" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel3/HC/CRTParametersConteiner/HC/VC/HC"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Intensity:"
+
+[node name="HSeparator" type="HSeparator" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel3/HC/CRTParametersConteiner/HC/VC/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="IntensityInput" type="Button" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel3/HC/CRTParametersConteiner/HC/VC/HC"]
+custom_minimum_size = Vector2(80, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+script = ExtResource("7_8ww77")
+
+[node name="IntensityRange" type="Label" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel3/HC/CRTParametersConteiner/HC/VC/HC"]
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_colors/font_color = Color(0.478431, 0.478431, 0.478431, 1)
+theme_override_font_sizes/font_size = 16
+text = "B-T"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HC2" type="HBoxContainer" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel3/HC/CRTParametersConteiner/HC/VC"]
+layout_mode = 2
+alignment = 1
+
+[node name="Label" type="Label" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel3/HC/CRTParametersConteiner/HC/VC/HC2"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Scanline Thickness:"
+
+[node name="HSeparator" type="HSeparator" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel3/HC/CRTParametersConteiner/HC/VC/HC2"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ScanlineThicknessInput" type="Button" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel3/HC/CRTParametersConteiner/HC/VC/HC2"]
+custom_minimum_size = Vector2(80, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+script = ExtResource("7_8ww77")
+
+[node name="ScanlineThicknessRange" type="Label" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel3/HC/CRTParametersConteiner/HC/VC/HC2"]
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_colors/font_color = Color(0.478431, 0.478431, 0.478431, 1)
+theme_override_font_sizes/font_size = 16
+text = "B-T"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HC3" type="HBoxContainer" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel3/HC/CRTParametersConteiner/HC/VC"]
+layout_mode = 2
+alignment = 1
+
+[node name="Label" type="Label" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel3/HC/CRTParametersConteiner/HC/VC/HC3"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Scanline Darkness:"
+
+[node name="HSeparator" type="HSeparator" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel3/HC/CRTParametersConteiner/HC/VC/HC3"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ScanlineDarknessInput" type="Button" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel3/HC/CRTParametersConteiner/HC/VC/HC3"]
+custom_minimum_size = Vector2(80, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+script = ExtResource("7_8ww77")
+
+[node name="ScanlineDarknessRange" type="Label" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel3/HC/CRTParametersConteiner/HC/VC/HC3"]
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_colors/font_color = Color(0.478431, 0.478431, 0.478431, 1)
+theme_override_font_sizes/font_size = 16
+text = "B-T"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HC4" type="HBoxContainer" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel3/HC/CRTParametersConteiner/HC/VC"]
+layout_mode = 2
+alignment = 1
+
+[node name="Label" type="Label" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel3/HC/CRTParametersConteiner/HC/VC/HC4"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Phosphor Thickness:"
+
+[node name="HSeparator" type="HSeparator" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel3/HC/CRTParametersConteiner/HC/VC/HC4"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="PhosphorThicknessInput" type="Button" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel3/HC/CRTParametersConteiner/HC/VC/HC4"]
+custom_minimum_size = Vector2(80, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+script = ExtResource("7_8ww77")
+
+[node name="PhosphorThicknessRange" type="Label" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel3/HC/CRTParametersConteiner/HC/VC/HC4"]
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_colors/font_color = Color(0.478431, 0.478431, 0.478431, 1)
+theme_override_font_sizes/font_size = 16
+text = "B-T"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HC5" type="HBoxContainer" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel3/HC/CRTParametersConteiner/HC/VC"]
+layout_mode = 2
+alignment = 1
+
+[node name="Label" type="Label" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel3/HC/CRTParametersConteiner/HC/VC/HC5"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Phosphor Strength:"
+
+[node name="HSeparator" type="HSeparator" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel3/HC/CRTParametersConteiner/HC/VC/HC5"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="PhosphorStrengthInput" type="Button" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel3/HC/CRTParametersConteiner/HC/VC/HC5"]
+custom_minimum_size = Vector2(80, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+script = ExtResource("7_8ww77")
+
+[node name="PhosphorStrengthRange" type="Label" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel3/HC/CRTParametersConteiner/HC/VC/HC5"]
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_colors/font_color = Color(0.478431, 0.478431, 0.478431, 1)
+theme_override_font_sizes/font_size = 16
+text = "B-T"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HC6" type="HBoxContainer" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel3/HC/CRTParametersConteiner/HC/VC"]
+layout_mode = 2
+alignment = 1
+
+[node name="Label" type="Label" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel3/HC/CRTParametersConteiner/HC/VC/HC6"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Flicker Speed:"
+
+[node name="HSeparator" type="HSeparator" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel3/HC/CRTParametersConteiner/HC/VC/HC6"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="FlickerSpeedInput" type="Button" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel3/HC/CRTParametersConteiner/HC/VC/HC6"]
+custom_minimum_size = Vector2(80, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+script = ExtResource("7_8ww77")
+
+[node name="FlickerSpeedRange" type="Label" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel3/HC/CRTParametersConteiner/HC/VC/HC6"]
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_colors/font_color = Color(0.478431, 0.478431, 0.478431, 1)
+theme_override_font_sizes/font_size = 16
+text = "B-T"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HC7" type="HBoxContainer" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel3/HC/CRTParametersConteiner/HC/VC"]
+layout_mode = 2
+alignment = 1
+
+[node name="Label" type="Label" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel3/HC/CRTParametersConteiner/HC/VC/HC7"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Flicker Strength:"
+
+[node name="HSeparator" type="HSeparator" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel3/HC/CRTParametersConteiner/HC/VC/HC7"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="FlickerStrengthInput" type="Button" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel3/HC/CRTParametersConteiner/HC/VC/HC7"]
+custom_minimum_size = Vector2(80, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+script = ExtResource("7_8ww77")
+
+[node name="FlickerStrengthRange" type="Label" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel3/HC/CRTParametersConteiner/HC/VC/HC7"]
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_colors/font_color = Color(0.478431, 0.478431, 0.478431, 1)
+theme_override_font_sizes/font_size = 16
+text = "B-T"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel3/HC/CRTParametersConteiner/HC"]
+custom_minimum_size = Vector2(15, 0)
+layout_mode = 2
+
+[node name="ResetButton" type="Button" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel3/HC/CRTParametersConteiner/HC"]
+custom_minimum_size = Vector2(25, 25)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+size_flags_stretch_ratio = 0.2
+theme_override_font_sizes/font_size = 22
+text = "R
+E
+S
+E
+T"
+
+[node name="HSeparator2" type="HSeparator" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel3/HC/CRTParametersConteiner/HC"]
+custom_minimum_size = Vector2(30, 0)
+layout_mode = 2
+
+[node name="GeneralSettingsPanel" type="Panel" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC"]
+layout_mode = 2
+
+[node name="VC" type="VBoxContainer" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/GeneralSettingsPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = SubResource("GDScript_1xyqn")
+
+[node name="Option3" type="HBoxContainer" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/GeneralSettingsPanel/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+alignment = 1
+
+[node name="Label" type="Label" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/GeneralSettingsPanel/VC/Option3"]
+layout_mode = 2
+text = "Resolution"
+
+[node name="HS" type="HSeparator" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/GeneralSettingsPanel/VC/Option3"]
+custom_minimum_size = Vector2(25, 0)
+layout_mode = 2
+
+[node name="OptionButton" type="OptionButton" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/GeneralSettingsPanel/VC/Option3"]
+custom_minimum_size = Vector2(125, 25)
+layout_mode = 2
+size_flags_vertical = 4
+item_count = 4
+popup/item_0/text = "1280x720"
+popup/item_0/id = 2
+popup/item_1/text = "800x480"
+popup/item_1/id = 0
+popup/item_2/text = "640x480"
+popup/item_2/id = 3
+popup/item_3/text = "480x320"
+popup/item_3/id = 1
+
+[node name="HS2" type="HSeparator" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/GeneralSettingsPanel/VC/Option3"]
+custom_minimum_size = Vector2(25, 0)
+layout_mode = 2
+
+[node name="Label2" type="Label" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/GeneralSettingsPanel/VC/Option3"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.478431, 0.478431, 0.478431, 1)
+theme_override_font_sizes/font_size = 16
+text = "UI designed for 800x480"
+horizontal_alignment = 1
+
+[node name="Option4" type="HBoxContainer" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/GeneralSettingsPanel/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+alignment = 1
+
+[node name="Label" type="Label" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/GeneralSettingsPanel/VC/Option4"]
+layout_mode = 2
+text = "Shader Tex Ratio"
+
+[node name="HS" type="HSeparator" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/GeneralSettingsPanel/VC/Option4"]
+custom_minimum_size = Vector2(25, 0)
+layout_mode = 2
+
+[node name="OptionButton" type="OptionButton" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/GeneralSettingsPanel/VC/Option4"]
+custom_minimum_size = Vector2(125, 25)
+layout_mode = 2
+size_flags_vertical = 4
+item_count = 3
+popup/item_0/text = "1:1"
+popup/item_0/id = 0
+popup/item_1/text = "1:2"
+popup/item_1/id = 1
+popup/item_2/text = "1:4"
+popup/item_2/id = 2
+
+[node name="HS2" type="HSeparator" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/GeneralSettingsPanel/VC/Option4"]
+custom_minimum_size = Vector2(25, 0)
+layout_mode = 2
+
+[node name="Label2" type="Label" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/GeneralSettingsPanel/VC/Option4"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.478431, 0.478431, 0.478431, 1)
+theme_override_font_sizes/font_size = 16
+text = "Downscaling 
+requiers reset
+(seems to be broken)"
+horizontal_alignment = 1
+
+[node name="Option5" type="HBoxContainer" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/GeneralSettingsPanel/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+alignment = 1
+
+[node name="Label" type="Label" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/GeneralSettingsPanel/VC/Option5"]
+layout_mode = 2
+text = "FPS cap"
+
+[node name="HS" type="HSeparator" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/GeneralSettingsPanel/VC/Option5"]
+custom_minimum_size = Vector2(25, 0)
+layout_mode = 2
+
+[node name="FPSValueInput" type="Button" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/GeneralSettingsPanel/VC/Option5"]
+custom_minimum_size = Vector2(80, 25)
+layout_mode = 2
+size_flags_vertical = 4
+script = ExtResource("7_8ww77")
+max_value = 48.0
+
+[node name="Option1" type="HBoxContainer" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/GeneralSettingsPanel/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_stretch_ratio = 0.7
+
+[node name="HS2" type="HSeparator" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/GeneralSettingsPanel/VC/Option1"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="CenterLightToggleStateLabel" type="Label" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/GeneralSettingsPanel/VC/Option1"]
+custom_minimum_size = Vector2(130, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 1
+text = "Center Light
+"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ToggleCenterLightButton" type="Button" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/GeneralSettingsPanel/VC/Option1"]
+layout_mode = 2
+size_flags_horizontal = 6
+size_flags_vertical = 4
+theme_override_font_sizes/font_size = 20
+text = "Toggle"
+
+[node name="LabelCenterLightState" type="Label" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/GeneralSettingsPanel/VC/Option1"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.478431, 0.478431, 0.478431, 1)
+theme_override_font_sizes/font_size = 20
+text = "on/off"
+
+[node name="HS" type="HSeparator" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/GeneralSettingsPanel/VC/Option1"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Option2" type="HBoxContainer" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/GeneralSettingsPanel/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_stretch_ratio = 0.7
+
+[node name="HS2" type="HSeparator" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/GeneralSettingsPanel/VC/Option2"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="FocusLightToggleStateLabel" type="Label" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/GeneralSettingsPanel/VC/Option2"]
+custom_minimum_size = Vector2(130, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 1
+text = "Focus Light
+"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ToggleFocusLightButton" type="Button" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/GeneralSettingsPanel/VC/Option2"]
+layout_mode = 2
+size_flags_horizontal = 6
+size_flags_vertical = 4
+theme_override_font_sizes/font_size = 20
+text = "Toggle"
+
+[node name="LabelFocusLightState" type="Label" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/GeneralSettingsPanel/VC/Option2"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.478431, 0.478431, 0.478431, 1)
+theme_override_font_sizes/font_size = 20
+text = "on/off"
+
+[node name="HS" type="HSeparator" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/GeneralSettingsPanel/VC/Option2"]
+layout_mode = 2
+size_flags_horizontal = 3

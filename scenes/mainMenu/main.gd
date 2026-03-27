@@ -9,7 +9,13 @@ extends Control
 var user_popup_scene = preload("res://scenes/mainMenu/UserPopup.tscn")
 var init_menu := Menu.new("init_menu", "res://scenes/InitMenu/initMenu.tscn")
 
+@onready var focus_light = $FocusLight2D
+var current_focus: Control = null
+
 func _ready():
+	var resolution = SettingsGlobal.get_resolution()
+	DisplayServer.window_set_size(resolution)
+	
 	# Set the main control reference in MenuManager
 	MenuManager.set_main_control(content)
 	MenuManager.set_nav_bar(navBar)
@@ -25,6 +31,9 @@ func _ready():
 	
 	#run_debug()
 	#print("current user: ", DataManager.current_user)
+	
+	# For tracking current focus
+	get_viewport().gui_focus_changed.connect(_on_focus_changed)
 	
 	# Disable nav bar, enable it in init menu after all navbar menus are preloaded
 	MenuManager.toggle_nav_buttons_disable(true)
@@ -70,3 +79,8 @@ func _on_user_selected(user: UserResource):
 	DataManager.current_user = user
 	userSelectButton.text=user.name
 	print("Selected user:", user.name)	
+	
+func _on_focus_changed(node):
+	current_focus = node
+	if focus_light:
+		focus_light.set_focus(node)

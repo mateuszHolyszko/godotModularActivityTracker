@@ -30,6 +30,7 @@ var exercise: ExerciseResource
 @onready var value_input_weight    = $Panel/HC/MainPanel/VC/WeightPanel/HC/InputWeightPanel/ValueInputWeight
 @onready var value_input_reps      = $Panel/HC/MainPanel/VC/RepsPanel/HC/InputRepsPanel/ValueInputReps
 @onready var set_num_label         = $Panel/HC/SetNumPanel/HC/SetNumLabel
+@onready var set_num_panel         = $Panel/HC/SetNumPanel
 
 # Adjust it if exercise is bodyweight
 @onready var weight_label 		   = $Panel/HC/MainPanel/VC/WeightPanel/HC/LabelPanel/MC/Label
@@ -82,6 +83,14 @@ func _on_node_ready():
 	# connect inputs/buttons
 	value_input_weight.value_confirmed.connect(_on_weight_changed)
 	value_input_reps.value_confirmed.connect(_on_reps_changed)
+	
+	# set SetNumPanel color based on the exercise target
+	var color = MuscleData.get_color( exercise.target_muscle )
+	color.darkened(0.5)
+	
+	var style = StyleBoxFlat.new()
+	style.bg_color = color
+	set_num_panel.add_theme_stylebox_override(\"panel\", style)
 	
 	# check if its bodyweight exercise if so take last know weight (saved in session model at .lastWeight)
 	if exercise.bodyweight:
@@ -212,7 +221,7 @@ grow_vertical = 2
 theme_override_constants/separation = 0
 
 [node name="SetNumPanel" type="Panel" parent="Panel/HC"]
-modulate = Color(1, 1, 1, 0.607843)
+self_modulate = Color(1, 1, 1, 0.454902)
 custom_minimum_size = Vector2(100, 0)
 layout_mode = 2
 size_flags_stretch_ratio = 0.8
@@ -229,6 +238,7 @@ alignment = 1
 [node name="Label" type="Label" parent="Panel/HC/SetNumPanel/HC"]
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0, 0, 0, 1)
 theme_override_font_sizes/font_size = 40
 text = " Set"
 horizontal_alignment = 1
@@ -237,6 +247,7 @@ vertical_alignment = 1
 [node name="SetNumLabel" type="Label" parent="Panel/HC/SetNumPanel/HC"]
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0, 0, 0, 1)
 theme_override_font_sizes/font_size = 40
 text = "0"
 horizontal_alignment = 1

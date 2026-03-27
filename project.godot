@@ -23,6 +23,7 @@ MenuManager="*res://autoload/MenuManager.gd"
 NotificationManager="*res://autoload/NotificationManager.gd"
 SessionManager="*res://db/scripts/hypertrophySession/sessionManager.gd"
 SceneRegistry3d="*res://autoload/SceneRegistry3D.gd"
+SettingsGlobal="*res://autoload/settings_global.gd"
 
 [display]
 

@@ -18,7 +18,7 @@ rep_range = Vector2i(3, 7)
 
 [sub_resource type="Resource" id="Resource_q4kqy"]
 script = ExtResource("2_lmu5j")
-order = 2
+order = 1
 exercise_type = 1
 exercise = SubResource("Resource_gxa24")
 
@@ -35,7 +35,7 @@ rep_range = Vector2i(6, 10)
 
 [sub_resource type="Resource" id="Resource_43rnm"]
 script = ExtResource("2_lmu5j")
-order = 1
+order = 2
 exercise_type = 2
 exercise = SubResource("Resource_lmtrr")
 

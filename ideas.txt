@@ -8,3 +8,5 @@ Later make similar to SelectUserPopup for Module (Running Hyperthropy Streaching
 4.Menu -> Data:  settings and exercises for modules
 
 Create for each element on ready signal custom random animation, so that when children are added it looks like slogish bootup
+
+TODO: Resolution support needs more adjustments (for example adjust lights)
