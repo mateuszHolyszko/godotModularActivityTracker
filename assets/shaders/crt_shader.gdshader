@@ -7,8 +7,6 @@ uniform float pixel_width = 800.0;
 uniform float pixel_height = 480.0;
 
 // Adjustable parameters
-uniform float scanline_thickness = 0.65;  // Lower = thicker scanlines (0.5-0.9)
-uniform float scanline_darkness = 0.35;   // How dark the scanlines are (0.2-0.5)
 uniform float phosphor_thickness = 2.0;   // Lower = thicker phosphor bands (1.5-3.0)
 uniform float phosphor_strength = 0.15;   // How strong the phosphor effect is (0.05-0.25)
 uniform float flicker_speed = 100.0;      // Flicker frequency (40-150)
@@ -57,15 +55,6 @@ void fragment(){
         // noise
         float noise = (rand(uv0 * TIME) - 0.5) * 0.4 * intensity;
         color += noise;
-    }
-    
-    // === APPLY SCANLINES (after curvature but before phosphor) ===
-    if (inside > 0.5){
-        // Use the curved UV coordinates for scanlines
-        float scanline_y = uv0.y * pixel_height;
-        float scanline = abs(sin(scanline_y * 3.14159));
-        scanline = mix(scanline_darkness, 1.0, scanline);
-        color *= scanline;
     }
     
     // === APPLY RGB PHOSPHOR MASK (after scanlines) ===

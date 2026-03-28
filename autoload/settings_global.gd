@@ -13,6 +13,8 @@ signal center_light_toggled(enabled: bool)
 signal focus_light_toggled(enabled: bool)
 signal bleed_shader_updated(params: Dictionary)
 signal crt_shader_updated(params: Dictionary)
+signal scanlines_toggled(enabled: bool)
+signal scanlines_modulate_a_changed(alpha: float)
 
 const DEFAULT_RESOLUTION = Vector2i(800, 480)
 const DEFAULT_SHADER_TOGGLE = true
@@ -31,19 +33,22 @@ const DEFAULT_BLEED_SETTINGS = {
 # CRT shader defaults (pixel_width and pixel_height will be calculated dynamically)
 const DEFAULT_CRT_SETTINGS = {
 	"intensity": 0.25,
-	"scanline_thickness": 0.65,
-	"scanline_darkness": 1.205,
 	"phosphor_thickness": 1.375,
 	"phosphor_strength": 0.15,
 	"flicker_speed": 100.0,
 	"flicker_strength": 0.03
 }
 
+# Scanlines overlay defaults
+const DEFAULT_SCANLINES_TOGGLE = true
+const DEFAULT_SCANLINES_MODULATE_A = 0.2 # default alpha
+
 # Stored for access in setting menu 
 var render_canvas_layer: CanvasLayer # (for shader toggle)
 var center_light: PointLight2D # (for center light toggle)
 var cavas_modulate: CanvasModulate # (for center light toggle)
 var focus_light: PointLight2D # (for focus light toggle)
+var scanlines_text_rect: TextureRect # (for scanlines overlay)
 
 func _ready():
 	load_settings()
@@ -73,6 +78,8 @@ func _set_defaults():
 	config.set_value("video", "focus_light_enabled", DEFAULT_FOCUS_LIGHT_TOGGLE)
 	config.set_value("video", "shader_text_scale", DEFAULT_SHADER_TEXT_SCALE)
 	config.set_value("video", "max_frames", DEFAULT_MAX_FRAMES)
+	config.set_value("video", "scanlines_enabled", DEFAULT_SCANLINES_TOGGLE)
+	config.set_value("video", "scanlines_modulate_a", DEFAULT_SCANLINES_MODULATE_A)
 	
 	# Bleed shader settings (pixel_width will be calculated dynamically)
 	for key in DEFAULT_BLEED_SETTINGS:
@@ -96,6 +103,10 @@ func _validate_and_fix_settings():
 		config.set_value("video", "shader_text_scale", DEFAULT_SHADER_TEXT_SCALE)
 	if not config.has_section_key("video", "max_frames"):
 		config.set_value("video", "max_frames", DEFAULT_MAX_FRAMES)
+	if not config.has_section_key("video", "scanlines_enabled"):
+		config.set_value("video", "scanlines_enabled", DEFAULT_SCANLINES_TOGGLE)
+	if not config.has_section_key("video", "scanlines_modulate_a"):
+		config.set_value("video", "scanlines_modulate_a", DEFAULT_SCANLINES_MODULATE_A)
 	
 	# Check and add missing bleed shader settings
 	for key in DEFAULT_BLEED_SETTINGS:
@@ -112,6 +123,8 @@ func _emit_shader_signals():
 	shader_toggled.emit(get_shader_enabled())
 	bleed_shader_updated.emit(get_all_bleed_settings())
 	crt_shader_updated.emit(get_all_crt_settings())
+	scanlines_toggled.emit(get_scanlines_enabled())
+	scanlines_modulate_a_changed.emit(get_scanlines_modulate_a())
 
 func _apply_max_frames():
 	"""Apply the max frames setting to the engine"""
@@ -195,12 +208,6 @@ func get_crt_pixel_height() -> float:
 	var pixel_dimensions = _calculate_pixel_dimensions()
 	return pixel_dimensions.y
 
-func get_scanline_thickness() -> float:
-	return config.get_value("crt_shader", "scanline_thickness", DEFAULT_CRT_SETTINGS["scanline_thickness"])
-
-func get_scanline_darkness() -> float:
-	return config.get_value("crt_shader", "scanline_darkness", DEFAULT_CRT_SETTINGS["scanline_darkness"])
-
 func get_phosphor_thickness() -> float:
 	return config.get_value("crt_shader", "phosphor_thickness", DEFAULT_CRT_SETTINGS["phosphor_thickness"])
 
@@ -219,14 +226,18 @@ func get_all_crt_settings() -> Dictionary:
 		"intensity": get_crt_intensity(),
 		"pixel_width": pixel_dimensions.x,
 		"pixel_height": pixel_dimensions.y,
-		"scanline_thickness": get_scanline_thickness(),
-		"scanline_darkness": get_scanline_darkness(),
 		"phosphor_thickness": get_phosphor_thickness(),
 		"phosphor_strength": get_phosphor_strength(),
 		"flicker_speed": get_flicker_speed(),
 		"flicker_strength": get_flicker_strength()
 	}
 
+# Scanlines overlay getters
+func get_scanlines_enabled() -> bool:
+	return config.get_value("video", "scanlines_enabled", DEFAULT_SCANLINES_TOGGLE)
+
+func get_scanlines_modulate_a() -> float:
+	return config.get_value("video", "scanlines_modulate_a", DEFAULT_SCANLINES_MODULATE_A)
 
 # ========== SETTERS ==========
 
@@ -312,16 +323,19 @@ func set_crt_intensity(value: float):
 	crt_shader_updated.emit(get_all_crt_settings())
 	settings_changed.emit()
 
-func set_scanline_thickness(value: float):
-	config.set_value("crt_shader", "scanline_thickness", clamp(value, 0.5, 0.9))
+
+func set_scanlines_enabled(enabled: bool):
+	config.set_value("video", "scanlines_enabled", enabled)
 	save_settings()
-	crt_shader_updated.emit(get_all_crt_settings())
+	scanlines_toggled.emit(enabled)
 	settings_changed.emit()
 
-func set_scanline_darkness(value: float):
-	config.set_value("crt_shader", "scanline_darkness", clamp(value, 0.1, 1.5))
+
+func set_scanlines_modulate_a(alpha: float):
+	alpha = clamp(alpha, 0.01, 0.3)
+	config.set_value("video", "scanlines_modulate_a", alpha)
 	save_settings()
-	crt_shader_updated.emit(get_all_crt_settings())
+	scanlines_modulate_a_changed.emit(alpha)
 	settings_changed.emit()
 
 func set_phosphor_thickness(value: float):

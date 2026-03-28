@@ -1,9 +1,9 @@
-[gd_scene load_steps=30 format=3 uid="uid://dnks4hnqxbj6s"]
+[gd_scene load_steps=32 format=3 uid="uid://dnks4hnqxbj6s"]
 
 [ext_resource type="Script" path="res://scenes/mainMenu/main.gd" id="1_2ilo5"]
 [ext_resource type="Theme" uid="uid://f6n2yykmqd16" path="res://assets/style/theme.tres" id="2_ujpk0"]
 [ext_resource type="Script" path="res://scenes/mainMenu/NavBar.gd" id="3_rha28"]
-[ext_resource type="Shader" path="res://scenes/mainMenu/crt_shader.gdshader" id="4_an45y"]
+[ext_resource type="Shader" path="res://assets/shaders/crt_shader.gdshader" id="4_an45y"]
 [ext_resource type="Script" path="res://scenes/mainMenu/NotificationPanel.gd" id="4_iyhic"]
 [ext_resource type="Texture2D" uid="uid://dsdhkdibtavyr" path="res://assets/icons/battery-2-svgrepo-com.svg" id="4_vejc8"]
 [ext_resource type="Texture2D" uid="uid://bqrkgsajufsu" path="res://assets/icons/sliders-2-svgrepo-com.svg" id="4_ybce0"]
@@ -12,7 +12,8 @@
 [ext_resource type="PackedScene" uid="uid://yr815312l8g0" path="res://scenes/elements/notification/NotificationItem.tscn" id="5_n4hrt"]
 [ext_resource type="Texture2D" uid="uid://cayrv6yq2jd6" path="res://assets/light.png" id="10_0v5s8"]
 [ext_resource type="Texture2D" uid="uid://d1hmxcrlm27ov" path="res://assets/lightHorizontal.png" id="10_n6prj"]
-[ext_resource type="Shader" path="res://scenes/mainMenu/bleed_shader.gdshader" id="10_u3alc"]
+[ext_resource type="Shader" path="res://assets/shaders/bleed_shader.gdshader" id="10_u3alc"]
+[ext_resource type="Texture2D" uid="uid://pratir6v2jm7" path="res://assets/scanlines500x500.png" id="12_p88v3"]
 
 [sub_resource type="GDScript" id="GDScript_yka2k"]
 script/source = "extends CanvasModulate
@@ -138,8 +139,8 @@ script/source = "extends PointLight2D
 var target_position: Vector2 = Vector2.ZERO
 var has_target: bool = false
 
-# Smoothing speed (tweak this)
-@export var follow_speed: float = 10.0
+# Smoothing speed 
+@export var follow_speed: float = 5.0
 
 func _ready():
 	SettingsGlobal.focus_light = self
@@ -173,10 +174,36 @@ func set_focus(focus: Control):
 [sub_resource type="GDScript" id="GDScript_4l57w"]
 script/source = "extends PointLight2D
 
+# TODO add to settings
+@export var flicker_enabled: bool = true
+@export var flicker_speed: float = 8  # How often it changes
+@export var flicker_intensity: float = 0.08  # Maximum variation
+@export var base_energy: float = 1.0
 
+var flicker_timer: float = 0.0
+var target_energy: float = 1.0
 
 func _ready():
 	SettingsGlobal.center_light = self
+	
+	
+	base_energy = energy
+	target_energy = energy
+
+func _process(delta):
+	if flicker_enabled and SettingsGlobal.get_center_light_enabled():
+		flicker_timer += delta
+		
+		# Change target randomly at intervals
+		if flicker_timer >= 1.0 / flicker_speed:
+			flicker_timer = 0.0
+			target_energy = base_energy + (randf() - 0.5) * flicker_intensity * 2
+			target_energy = clamp(target_energy, base_energy * 0.5, base_energy * 1.5)
+		
+		# Smoothly interpolate towards target
+		energy = lerp(energy, target_energy, delta * 20.0)
+	else:
+		energy = base_energy
 "
 
 [sub_resource type="GDScript" id="GDScript_dyjcy"]
@@ -186,6 +213,26 @@ func _ready() -> void:
 	layer = 1025
 	SettingsGlobal.render_canvas_layer = self
 	visible = SettingsGlobal.get_shader_enabled()
+"
+
+[sub_resource type="GDScript" id="GDScript_cf6eo"]
+script/source = "extends TextureRect
+
+func _ready():
+	SettingsGlobal.scanlines_text_rect = self
+	
+	# Apply initial modulate alpha from settings
+	var modulate_color = self.modulate
+	modulate_color.a = SettingsGlobal.get_scanlines_modulate_a()
+	self.modulate = modulate_color
+	
+	# Listen for changes to modulate alpha
+	SettingsGlobal.scanlines_modulate_a_changed.connect(_on_scanlines_modulate_a_changed)
+
+func _on_scanlines_modulate_a_changed(alpha: float) -> void:
+	var modulate_color = self.modulate
+	modulate_color.a = alpha
+	self.modulate = modulate_color
 "
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_ddlnt"]
@@ -237,8 +284,6 @@ shader = ExtResource("4_an45y")
 shader_parameter/intensity = 0.25
 shader_parameter/pixel_width = 800.0
 shader_parameter/pixel_height = 480.0
-shader_parameter/scanline_thickness = 0.65
-shader_parameter/scanline_darkness = 1.205
 shader_parameter/phosphor_thickness = 1.375
 shader_parameter/phosphor_strength = 0.15
 shader_parameter/flicker_speed = 100.0
@@ -271,8 +316,6 @@ func _update_crt_shader_params(params: Dictionary):
 	shader_material.set_shader_parameter(\"intensity\", params[\"intensity\"])
 	shader_material.set_shader_parameter(\"pixel_width\", params[\"pixel_width\"])
 	shader_material.set_shader_parameter(\"pixel_height\", params[\"pixel_height\"])
-	shader_material.set_shader_parameter(\"scanline_thickness\", params[\"scanline_thickness\"])
-	shader_material.set_shader_parameter(\"scanline_darkness\", params[\"scanline_darkness\"])
 	shader_material.set_shader_parameter(\"phosphor_thickness\", params[\"phosphor_thickness\"])
 	shader_material.set_shader_parameter(\"phosphor_strength\", params[\"phosphor_strength\"])
 	shader_material.set_shader_parameter(\"flicker_speed\", params[\"flicker_speed\"])
@@ -575,6 +618,19 @@ script = SubResource("GDScript_4l57w")
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 layer = 128
 script = SubResource("GDScript_dyjcy")
+
+[node name="ScanLinesTextRect" type="TextureRect" parent="CanvasLayer"]
+modulate = Color(1, 1, 1, 0.0392157)
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("12_p88v3")
+expand_mode = 2
+stretch_mode = 1
+script = SubResource("GDScript_cf6eo")
 
 [node name="BleedPass" type="ColorRect" parent="CanvasLayer"]
 material = SubResource("ShaderMaterial_ddlnt")

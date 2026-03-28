@@ -296,10 +296,6 @@ script/source = "extends VBoxContainer
 # References to custom InputValue components
 @onready var intensity_input = $HC/VC/HC/IntensityInput
 @onready var intensity_range = $HC/VC/HC/IntensityRange
-@onready var scanline_thickness_input = $HC/VC/HC2/ScanlineThicknessInput
-@onready var scanline_thickness_range = $HC/VC/HC2/ScanlineThicknessRange
-@onready var scanline_darkness_input = $HC/VC/HC3/ScanlineDarknessInput
-@onready var scanline_darkness_range = $HC/VC/HC3/ScanlineDarknessRange
 @onready var phosphor_thickness_input = $HC/VC/HC4/PhosphorThicknessInput
 @onready var phosphor_thickness_range = $HC/VC/HC4/PhosphorThicknessRange
 @onready var phosphor_strength_input = $HC/VC/HC5/PhosphorStrengthInput
@@ -326,18 +322,6 @@ func _setup_input_components():
 	intensity_input.max_value = 2.0
 	intensity_input.step = 0.01
 	intensity_range.text = \"0-2\"
-	
-	# Scanline Thickness: 0.5 - 0.9
-	scanline_thickness_input.min_value = 0.5
-	scanline_thickness_input.max_value = 0.9
-	scanline_thickness_input.step = 0.01
-	scanline_thickness_range.text = \"0.5-0.9\"
-	
-	# Scanline Darkness: 0.2 - 0.5
-	scanline_darkness_input.min_value = 0.2
-	scanline_darkness_input.max_value = 0.5
-	scanline_darkness_input.step = 0.01
-	scanline_darkness_range.text = \"0.2-0.5\"
 	
 	# Phosphor Thickness: 1.5 - 3.0
 	phosphor_thickness_input.min_value = 1.5
@@ -366,8 +350,6 @@ func _setup_input_components():
 func _connect_signals():
 	# Connect value_confirmed signals for all CRT parameters
 	intensity_input.value_confirmed.connect(_on_intensity_confirmed)
-	scanline_thickness_input.value_confirmed.connect(_on_scanline_thickness_confirmed)
-	scanline_darkness_input.value_confirmed.connect(_on_scanline_darkness_confirmed)
 	phosphor_thickness_input.value_confirmed.connect(_on_phosphor_thickness_confirmed)
 	phosphor_strength_input.value_confirmed.connect(_on_phosphor_strength_confirmed)
 	flicker_speed_input.value_confirmed.connect(_on_flicker_speed_confirmed)
@@ -380,12 +362,6 @@ func _load_current_settings():
 	# Load current values from SettingsGlobal into InputValue components
 	intensity_input.value = SettingsGlobal.get_crt_intensity()
 	intensity_input.update_text()
-	
-	scanline_thickness_input.value = SettingsGlobal.get_scanline_thickness()
-	scanline_thickness_input.update_text()
-	
-	scanline_darkness_input.value = SettingsGlobal.get_scanline_darkness()
-	scanline_darkness_input.update_text()
 	
 	phosphor_thickness_input.value = SettingsGlobal.get_phosphor_thickness()
 	phosphor_thickness_input.update_text()
@@ -404,14 +380,6 @@ func _load_current_settings():
 func _on_intensity_confirmed(value: float):
 	SettingsGlobal.set_crt_intensity(value)
 	print(\"CRT intensity set to: \", value)
-
-func _on_scanline_thickness_confirmed(value: float):
-	SettingsGlobal.set_scanline_thickness(value)
-	print(\"Scanline thickness set to: \", value)
-
-func _on_scanline_darkness_confirmed(value: float):
-	SettingsGlobal.set_scanline_darkness(value)
-	print(\"Scanline darkness set to: \", value)
 
 func _on_phosphor_thickness_confirmed(value: float):
 	SettingsGlobal.set_phosphor_thickness(value)
@@ -438,12 +406,6 @@ func _on_reset_pressed():
 	intensity_input.value = defaults[\"intensity\"]
 	intensity_input.update_text()
 	
-	scanline_thickness_input.value = defaults[\"scanline_thickness\"]
-	scanline_thickness_input.update_text()
-	
-	scanline_darkness_input.value = defaults[\"scanline_darkness\"]
-	scanline_darkness_input.update_text()
-	
 	phosphor_thickness_input.value = defaults[\"phosphor_thickness\"]
 	phosphor_thickness_input.update_text()
 	
@@ -458,8 +420,6 @@ func _on_reset_pressed():
 	
 	# Update settings with the reset values
 	SettingsGlobal.set_crt_intensity(defaults[\"intensity\"])
-	SettingsGlobal.set_scanline_thickness(defaults[\"scanline_thickness\"])
-	SettingsGlobal.set_scanline_darkness(defaults[\"scanline_darkness\"])
 	SettingsGlobal.set_phosphor_thickness(defaults[\"phosphor_thickness\"])
 	SettingsGlobal.set_phosphor_strength(defaults[\"phosphor_strength\"])
 	SettingsGlobal.set_flicker_speed(defaults[\"flicker_speed\"])
@@ -482,6 +442,11 @@ script/source = "extends VBoxContainer
 @onready var FocusLightToggleStateLabel = $Option2/LabelFocusLightState
 @onready var ToggleFocusLightButton = $Option2/ToggleFocusLightButton
 
+@onready var ScanLinesToggleState = $Option6/ScanLinesToggleState
+@onready var ScanLinesToggleLightButton = $Option6/ScanLinesToggleLightButton
+
+@onready var ScanLinesIntensityValueInput = $Option7/ScanLinesIntensityValueInput
+
 func _ready():
 	_connect_signals()
 	_load_current_settings()
@@ -496,6 +461,11 @@ func _connect_signals():
 	SettingsGlobal.center_light_toggled.connect(_on_center_light_toggled)
 	ToggleFocusLightButton.pressed.connect(_on_toggle_focus_light_pressed)
 	SettingsGlobal.focus_light_toggled.connect(_on_focus_light_toggled)
+	
+	# Scan Lines connections
+	ScanLinesToggleLightButton.pressed.connect(_on_toggle_scan_lines_pressed)
+	SettingsGlobal.scanlines_toggled.connect(_on_scan_lines_toggled)
+	ScanLinesIntensityValueInput.value_confirmed.connect(_on_scan_lines_intensity_changed)
 
 func _load_current_settings():
 	# Load current resolution
@@ -527,6 +497,11 @@ func _load_current_settings():
 	# Load light toggels
 	FocusLightToggleStateLabel.text = \"Light: ON\" if SettingsGlobal.get_focus_light_enabled() else \"Light: OFF\"
 	LabelCenterLightState.text = \"Light: ON\" if SettingsGlobal.get_center_light_enabled() else \"Light: OFF\"
+	
+	# Load Scan Lines settings
+	ScanLinesToggleState.text = \"Scan Lines: ON\" if SettingsGlobal.get_scanlines_enabled() else \"Scan Lines: OFF\"
+	ScanLinesIntensityValueInput.value = SettingsGlobal.get_scanlines_modulate_a()
+	ScanLinesIntensityValueInput.update_text()
 
 func _find_item_by_text(option_button: OptionButton, text: String) -> int:
 	\"\"\"Find the index of an item by its text\"\"\"
@@ -600,6 +575,23 @@ func _on_focus_light_toggled(light_enabled: bool):
 	if SettingsGlobal.focus_light:
 		SettingsGlobal.focus_light.enabled = light_enabled
 	FocusLightToggleStateLabel.text = \"Light: ON\" if light_enabled else \"Light: OFF\"
+
+# == Scan Lines ==
+func _on_toggle_scan_lines_pressed():
+	var new_state = not SettingsGlobal.get_scanlines_enabled()
+	SettingsGlobal.set_scanlines_enabled(new_state)
+	# set_scan_lines_enabled() should emit scan_lines_toggled, which drives everything below
+
+func _on_scan_lines_toggled(scan_lines_enabled: bool):
+	# Apply visibility or enable/disable to the scan lines effect
+	if SettingsGlobal.scanlines_text_rect: 
+		SettingsGlobal.scanlines_text_rect.visible = scan_lines_enabled
+	
+	ScanLinesToggleState.text = \"Scan Lines: ON\" if scan_lines_enabled else \"Scan Lines: OFF\"
+
+func _on_scan_lines_intensity_changed(new_intensity: float):
+	SettingsGlobal.set_scanlines_modulate_a(new_intensity)
+	print(\"Scan Lines intensity set to: \", new_intensity)
 "
 
 [node name="SettingMenu" type="Control"]
@@ -1034,64 +1026,6 @@ text = "B-T"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="HC2" type="HBoxContainer" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel3/HC/CRTParametersConteiner/HC/VC"]
-layout_mode = 2
-alignment = 1
-
-[node name="Label" type="Label" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel3/HC/CRTParametersConteiner/HC/VC/HC2"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 20
-text = "Scanline Thickness:"
-
-[node name="HSeparator" type="HSeparator" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel3/HC/CRTParametersConteiner/HC/VC/HC2"]
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="ScanlineThicknessInput" type="Button" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel3/HC/CRTParametersConteiner/HC/VC/HC2"]
-custom_minimum_size = Vector2(80, 0)
-layout_mode = 2
-theme_override_font_sizes/font_size = 18
-script = ExtResource("7_8ww77")
-
-[node name="ScanlineThicknessRange" type="Label" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel3/HC/CRTParametersConteiner/HC/VC/HC2"]
-custom_minimum_size = Vector2(50, 0)
-layout_mode = 2
-size_flags_horizontal = 4
-theme_override_colors/font_color = Color(0.478431, 0.478431, 0.478431, 1)
-theme_override_font_sizes/font_size = 16
-text = "B-T"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="HC3" type="HBoxContainer" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel3/HC/CRTParametersConteiner/HC/VC"]
-layout_mode = 2
-alignment = 1
-
-[node name="Label" type="Label" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel3/HC/CRTParametersConteiner/HC/VC/HC3"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 20
-text = "Scanline Darkness:"
-
-[node name="HSeparator" type="HSeparator" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel3/HC/CRTParametersConteiner/HC/VC/HC3"]
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="ScanlineDarknessInput" type="Button" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel3/HC/CRTParametersConteiner/HC/VC/HC3"]
-custom_minimum_size = Vector2(80, 0)
-layout_mode = 2
-theme_override_font_sizes/font_size = 18
-script = ExtResource("7_8ww77")
-
-[node name="ScanlineDarknessRange" type="Label" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel3/HC/CRTParametersConteiner/HC/VC/HC3"]
-custom_minimum_size = Vector2(50, 0)
-layout_mode = 2
-size_flags_horizontal = 4
-theme_override_colors/font_color = Color(0.478431, 0.478431, 0.478431, 1)
-theme_override_font_sizes/font_size = 16
-text = "B-T"
-horizontal_alignment = 1
-vertical_alignment = 1
-
 [node name="HC4" type="HBoxContainer" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/ShaderSettingsPanel/VC/OptionPanel3/HC/CRTParametersConteiner/HC/VC"]
 layout_mode = 2
 alignment = 1
@@ -1408,3 +1342,61 @@ text = "on/off"
 [node name="HS" type="HSeparator" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/GeneralSettingsPanel/VC/Option2"]
 layout_mode = 2
 size_flags_horizontal = 3
+
+[node name="Option6" type="HBoxContainer" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/GeneralSettingsPanel/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_stretch_ratio = 0.7
+
+[node name="HS2" type="HSeparator" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/GeneralSettingsPanel/VC/Option6"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ScanLinesToggleLabel" type="Label" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/GeneralSettingsPanel/VC/Option6"]
+custom_minimum_size = Vector2(130, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 1
+text = "Scanlines
+"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ScanLinesToggleLightButton" type="Button" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/GeneralSettingsPanel/VC/Option6"]
+layout_mode = 2
+size_flags_horizontal = 6
+size_flags_vertical = 4
+theme_override_font_sizes/font_size = 20
+text = "Toggle"
+
+[node name="ScanLinesToggleState" type="Label" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/GeneralSettingsPanel/VC/Option6"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.478431, 0.478431, 0.478431, 1)
+theme_override_font_sizes/font_size = 20
+text = "on/off"
+
+[node name="HS" type="HSeparator" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/GeneralSettingsPanel/VC/Option6"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Option7" type="HBoxContainer" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/GeneralSettingsPanel/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+alignment = 1
+
+[node name="Label" type="Label" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/GeneralSettingsPanel/VC/Option7"]
+layout_mode = 2
+text = "Scanlines Intensity"
+
+[node name="HS" type="HSeparator" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/GeneralSettingsPanel/VC/Option7"]
+custom_minimum_size = Vector2(25, 0)
+layout_mode = 2
+
+[node name="ScanLinesIntensityValueInput" type="Button" parent="CurrentSceneContent/HC/SettingPopUpPanel/MC/GeneralSettingsPanel/VC/Option7"]
+custom_minimum_size = Vector2(80, 25)
+layout_mode = 2
+size_flags_vertical = 4
+script = ExtResource("7_8ww77")
+step = 0.01
+min_value = 0.01
+max_value = 0.4

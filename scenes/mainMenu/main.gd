@@ -12,6 +12,7 @@ var init_menu := Menu.new("init_menu", "res://scenes/InitMenu/initMenu.tscn")
 @onready var focus_light = $FocusLight2D
 @onready var center_light = $CenterLight2D
 @onready var canvas_modulate = $CanvasModulate
+@onready var scanlines_text_rect = $CanvasLayer/ScanLinesTextRect
 var current_focus: Control = null
 
 func _ready():	
@@ -27,6 +28,8 @@ func _ready():
 	focus_light.enabled = SettingsGlobal.get_focus_light_enabled()
 	center_light.visible = SettingsGlobal.get_center_light_enabled()
 	canvas_modulate.visible = SettingsGlobal.get_center_light_enabled()
+	scanlines_text_rect.visible = SettingsGlobal.get_scanlines_enabled()
+	
 
 	# After init is loaded set to init menu
 	init_menu.load_completed.connect(func(_scene): MenuManager.change_menu("init_menu"))
