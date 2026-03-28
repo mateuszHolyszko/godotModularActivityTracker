@@ -10,18 +10,23 @@ var user_popup_scene = preload("res://scenes/mainMenu/UserPopup.tscn")
 var init_menu := Menu.new("init_menu", "res://scenes/InitMenu/initMenu.tscn")
 
 @onready var focus_light = $FocusLight2D
+@onready var center_light = $CenterLight2D
+@onready var canvas_modulate = $CanvasModulate
 var current_focus: Control = null
 
-func _ready():
-	var resolution = SettingsGlobal.get_resolution()
-	DisplayServer.window_set_size(resolution)
-	
+func _ready():	
 	# Set the main control reference in MenuManager
 	MenuManager.set_main_control(content)
 	MenuManager.set_nav_bar(navBar)
 	MenuManager.set_transition_rect($MenuTransitionLayer/TransitionRect)
 	
-	Engine.max_fps = 24
+	# Setting stuff (TODO move it to SettingsGlobal)
+	var resolution = SettingsGlobal.get_resolution()
+	DisplayServer.window_set_size(resolution)
+	Engine.max_fps = SettingsGlobal.get_max_frames()
+	focus_light.enabled = SettingsGlobal.get_focus_light_enabled()
+	center_light.visible = SettingsGlobal.get_center_light_enabled()
+	canvas_modulate.visible = SettingsGlobal.get_center_light_enabled()
 
 	# After init is loaded set to init menu
 	init_menu.load_completed.connect(func(_scene): MenuManager.change_menu("init_menu"))

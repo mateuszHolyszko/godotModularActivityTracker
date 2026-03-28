@@ -9,13 +9,17 @@ var config = ConfigFile.new()
 # Signal to notify when settings change
 signal settings_changed
 signal shader_toggled(shader_enabled: bool)
+signal center_light_toggled(enabled: bool)
+signal focus_light_toggled(enabled: bool)
 signal bleed_shader_updated(params: Dictionary)
 signal crt_shader_updated(params: Dictionary)
 
-# Default values
 const DEFAULT_RESOLUTION = Vector2i(800, 480)
 const DEFAULT_SHADER_TOGGLE = true
+const DEFAULT_CENTER_LIGHT_TOGGLE = true
+const DEFAULT_FOCUS_LIGHT_TOGGLE = true
 const DEFAULT_SHADER_TEXT_SCALE = 1  # 1 = full resolution, 2 = half resolution, etc.
+const DEFAULT_MAX_FRAMES = 24  # 0 = unlimited, >0 = capped frame rate
 
 # Bleed shader defaults (pixel_width will be calculated dynamically)
 const DEFAULT_BLEED_SETTINGS = {
@@ -35,8 +39,11 @@ const DEFAULT_CRT_SETTINGS = {
 	"flicker_strength": 0.03
 }
 
-# Stored for access in setting menu (for shader toggle)
-var render_canvas_layer
+# Stored for access in setting menu 
+var render_canvas_layer: CanvasLayer # (for shader toggle)
+var center_light: PointLight2D # (for center light toggle)
+var cavas_modulate: CanvasModulate # (for center light toggle)
+var focus_light: PointLight2D # (for focus light toggle)
 
 func _ready():
 	load_settings()
@@ -52,6 +59,9 @@ func load_settings():
 		# Validate loaded settings have all required keys
 		_validate_and_fix_settings()
 	
+	# Apply max frames setting after loading
+	_apply_max_frames()
+	
 	# Emit signals to update shaders after loading
 	_emit_shader_signals()
 
@@ -59,7 +69,10 @@ func _set_defaults():
 	# Video settings
 	config.set_value("video", "resolution", DEFAULT_RESOLUTION)
 	config.set_value("video", "shader_enabled", DEFAULT_SHADER_TOGGLE)
+	config.set_value("video", "center_light_enabled", DEFAULT_CENTER_LIGHT_TOGGLE)
+	config.set_value("video", "focus_light_enabled", DEFAULT_FOCUS_LIGHT_TOGGLE)
 	config.set_value("video", "shader_text_scale", DEFAULT_SHADER_TEXT_SCALE)
+	config.set_value("video", "max_frames", DEFAULT_MAX_FRAMES)
 	
 	# Bleed shader settings (pixel_width will be calculated dynamically)
 	for key in DEFAULT_BLEED_SETTINGS:
@@ -75,8 +88,14 @@ func _validate_and_fix_settings():
 		config.set_value("video", "resolution", DEFAULT_RESOLUTION)
 	if not config.has_section_key("video", "shader_enabled"):
 		config.set_value("video", "shader_enabled", DEFAULT_SHADER_TOGGLE)
+	if not config.has_section_key("video", "center_light_enabled"):
+		config.set_value("video", "center_light_enabled", DEFAULT_CENTER_LIGHT_TOGGLE)
+	if not config.has_section_key("video", "focus_light_enabled"):
+		config.set_value("video", "focus_light_enabled", DEFAULT_FOCUS_LIGHT_TOGGLE)
 	if not config.has_section_key("video", "shader_text_scale"):
 		config.set_value("video", "shader_text_scale", DEFAULT_SHADER_TEXT_SCALE)
+	if not config.has_section_key("video", "max_frames"):
+		config.set_value("video", "max_frames", DEFAULT_MAX_FRAMES)
 	
 	# Check and add missing bleed shader settings
 	for key in DEFAULT_BLEED_SETTINGS:
@@ -94,6 +113,16 @@ func _emit_shader_signals():
 	bleed_shader_updated.emit(get_all_bleed_settings())
 	crt_shader_updated.emit(get_all_crt_settings())
 
+func _apply_max_frames():
+	"""Apply the max frames setting to the engine"""
+	var max_frames = get_max_frames()
+	if max_frames > 0:
+		Engine.max_fps = max_frames
+		print("Max frames set to: ", max_frames)
+	else:
+		Engine.max_fps = 0  # Unlimited
+		print("Max frames set to: Unlimited")
+
 # ========== HELPER FUNCTIONS ==========
 
 func _calculate_pixel_dimensions() -> Vector2:
@@ -106,16 +135,27 @@ func _calculate_pixel_dimensions() -> Vector2:
 	
 	return Vector2(resolution.x / scale, resolution.y / scale)
 
+
 # ========== GETTERS ==========
 
 func get_resolution() -> Vector2i:
 	return config.get_value("video", "resolution", DEFAULT_RESOLUTION)
 
+
 func get_shader_enabled() -> bool:
 	return config.get_value("video", "shader_enabled", DEFAULT_SHADER_TOGGLE)
 
+func get_center_light_enabled() -> bool:
+	return config.get_value("video", "center_light_enabled", DEFAULT_CENTER_LIGHT_TOGGLE)
+
+func get_focus_light_enabled() -> bool:
+	return config.get_value("video", "focus_light_enabled", DEFAULT_FOCUS_LIGHT_TOGGLE)
+
 func get_shader_text_scale() -> int:
 	return config.get_value("video", "shader_text_scale", DEFAULT_SHADER_TEXT_SCALE)
+
+func get_max_frames() -> int:
+	return config.get_value("video", "max_frames", DEFAULT_MAX_FRAMES)
 
 # Bleed shader getters
 func get_bleed_strength() -> float:
@@ -187,6 +227,7 @@ func get_all_crt_settings() -> Dictionary:
 		"flicker_strength": get_flicker_strength()
 	}
 
+
 # ========== SETTERS ==========
 
 func set_resolution(resolution: Vector2i):
@@ -198,10 +239,23 @@ func set_resolution(resolution: Vector2i):
 	crt_shader_updated.emit(get_all_crt_settings())
 	settings_changed.emit()
 
+
 func set_shader_enabled(enabled: bool):
 	config.set_value("video", "shader_enabled", enabled)
 	save_settings()
 	shader_toggled.emit(enabled)
+	settings_changed.emit()
+
+func set_center_light_enabled(enabled: bool):
+	config.set_value("video", "center_light_enabled", enabled)
+	center_light_toggled.emit(enabled)
+	save_settings()
+	settings_changed.emit()
+
+func set_focus_light_enabled(enabled: bool):
+	config.set_value("video", "focus_light_enabled", enabled)
+	focus_light_toggled.emit(enabled)
+	save_settings()
 	settings_changed.emit()
 
 func set_shader_text_scale(scale: int):
@@ -213,6 +267,23 @@ func set_shader_text_scale(scale: int):
 	# Emit shader updates with new pixel dimensions
 	bleed_shader_updated.emit(get_all_bleed_settings())
 	crt_shader_updated.emit(get_all_crt_settings())
+	settings_changed.emit()
+
+func set_max_frames(max_frames: int):
+	# 0 = unlimited, negative values become 0
+	if max_frames < 0:
+		max_frames = 0
+	config.set_value("video", "max_frames", max_frames)
+	save_settings()
+	
+	# Apply the frame rate cap
+	if max_frames > 0:
+		Engine.max_fps = max_frames
+		print("Max frames set to: ", max_frames)
+	else:
+		Engine.max_fps = 0  # Unlimited
+		print("Max frames set to: Unlimited")
+	
 	settings_changed.emit()
 
 # Bleed shader setters

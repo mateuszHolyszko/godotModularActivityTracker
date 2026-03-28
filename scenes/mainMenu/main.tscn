@@ -1,4 +1,4 @@
-[gd_scene load_steps=28 format=3 uid="uid://dnks4hnqxbj6s"]
+[gd_scene load_steps=30 format=3 uid="uid://dnks4hnqxbj6s"]
 
 [ext_resource type="Script" path="res://scenes/mainMenu/main.gd" id="1_2ilo5"]
 [ext_resource type="Theme" uid="uid://f6n2yykmqd16" path="res://assets/style/theme.tres" id="2_ujpk0"]
@@ -13,6 +13,13 @@
 [ext_resource type="Texture2D" uid="uid://cayrv6yq2jd6" path="res://assets/light.png" id="10_0v5s8"]
 [ext_resource type="Texture2D" uid="uid://d1hmxcrlm27ov" path="res://assets/lightHorizontal.png" id="10_n6prj"]
 [ext_resource type="Shader" path="res://scenes/mainMenu/bleed_shader.gdshader" id="10_u3alc"]
+
+[sub_resource type="GDScript" id="GDScript_yka2k"]
+script/source = "extends CanvasModulate
+
+func _ready():
+	SettingsGlobal.cavas_modulate = self
+"
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_8y7tj"]
 bg_color = Color(1, 1, 1, 0.215686)
@@ -135,6 +142,7 @@ var has_target: bool = false
 @export var follow_speed: float = 10.0
 
 func _ready():
+	SettingsGlobal.focus_light = self
 	visible = false
 
 func _process(delta):
@@ -160,6 +168,15 @@ func set_focus(focus: Control):
 	
 	# Scale light based on control size
 	texture_scale = focus.size.length() / 200.0
+"
+
+[sub_resource type="GDScript" id="GDScript_4l57w"]
+script/source = "extends PointLight2D
+
+
+
+func _ready():
+	SettingsGlobal.center_light = self
 "
 
 [sub_resource type="GDScript" id="GDScript_dyjcy"]
@@ -288,6 +305,7 @@ script = ExtResource("1_2ilo5")
 
 [node name="CanvasModulate" type="CanvasModulate" parent="."]
 color = Color(0.1, 0.1, 0.1, 1)
+script = SubResource("GDScript_yka2k")
 
 [node name="NavBar" type="PanelContainer" parent="."]
 layout_mode = 1
@@ -552,6 +570,7 @@ energy = 1.3
 texture = ExtResource("10_0v5s8")
 offset = Vector2(400, 240)
 texture_scale = 1.5
+script = SubResource("GDScript_4l57w")
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 layer = 128

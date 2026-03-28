@@ -474,13 +474,28 @@ script/source = "extends VBoxContainer
 @onready var resolutionOptionButton = $Option3/OptionButton # options items : [1280x720, 800x480, 640x480, 480x320]
 @onready var shaderTextRatioOptionButton = $Option4/OptionButton # options items : [1:1, 1:2, 1:4]
 
+@onready var FPSInputValue = $Option5/FPSValueInput
+
+@onready var LabelCenterLightState = $Option1/LabelCenterLightState
+@onready var ToggleCenterLightButton = $Option1/ToggleCenterLightButton
+
+@onready var FocusLightToggleStateLabel = $Option2/LabelFocusLightState
+@onready var ToggleFocusLightButton = $Option2/ToggleFocusLightButton
+
 func _ready():
 	_connect_signals()
 	_load_current_settings()
+	
 
 func _connect_signals():
 	resolutionOptionButton.item_selected.connect(_on_resolution_selected)
 	shaderTextRatioOptionButton.item_selected.connect(_on_text_scale_selected)
+	FPSInputValue.value_confirmed.connect(_on_fps_value_changed)
+	
+	ToggleCenterLightButton.pressed.connect(_on_toggle_center_light_pressed)
+	SettingsGlobal.center_light_toggled.connect(_on_center_light_toggled)
+	ToggleFocusLightButton.pressed.connect(_on_toggle_focus_light_pressed)
+	SettingsGlobal.focus_light_toggled.connect(_on_focus_light_toggled)
 
 func _load_current_settings():
 	# Load current resolution
@@ -504,6 +519,14 @@ func _load_current_settings():
 		shaderTextRatioOptionButton.select(scale_index)
 	else:
 		print(\"Warning: Current text scale not in options: \", scale_text)
+		
+	# Load Fps
+	FPSInputValue.value = SettingsGlobal.get_max_frames()
+	FPSInputValue.update_text()
+	
+	# Load light toggels
+	FocusLightToggleStateLabel.text = \"Light: ON\" if SettingsGlobal.get_focus_light_enabled() else \"Light: OFF\"
+	LabelCenterLightState.text = \"Light: ON\" if SettingsGlobal.get_center_light_enabled() else \"Light: OFF\"
 
 func _find_item_by_text(option_button: OptionButton, text: String) -> int:
 	\"\"\"Find the index of an item by its text\"\"\"
@@ -548,6 +571,35 @@ func _on_text_scale_selected(index: int):
 	SettingsGlobal.set_shader_text_scale(new_scale)
 	
 	print(\"Shader text scale set to: \", selected_text)
+	
+func _on_fps_value_changed(new_fps_cap: float):
+	SettingsGlobal.set_max_frames(new_fps_cap)
+	print(\" FPS set to: \", new_fps_cap)
+
+# == Center Light == 	
+func _on_toggle_center_light_pressed():
+	var new_state = not SettingsGlobal.get_center_light_enabled()
+	SettingsGlobal.set_center_light_enabled(new_state)
+	# set_center_light_enabled() emits center_light_toggled, which drives everything below
+	
+func _on_center_light_toggled(light_enabled: bool):
+	# Apply visibility to the canvas layer (stops GPU draw calls)
+	if SettingsGlobal.center_light:
+		SettingsGlobal.center_light.visible = light_enabled
+		SettingsGlobal.cavas_modulate.visible = light_enabled
+	LabelCenterLightState.text = \"Light: ON\" if light_enabled else \"Light: OFF\"
+	
+# == Focus Light == 	
+func _on_toggle_focus_light_pressed():
+	var new_state = not SettingsGlobal.get_focus_light_enabled()
+	SettingsGlobal.set_focus_light_enabled(new_state)
+	# set_focus_light_enabled() emits focus_light_toggled, which drives everything below
+	
+func _on_focus_light_toggled(light_enabled: bool):
+	# Apply visibility to the canvas layer (stops GPU draw calls)
+	if SettingsGlobal.focus_light:
+		SettingsGlobal.focus_light.enabled = light_enabled
+	FocusLightToggleStateLabel.text = \"Light: ON\" if light_enabled else \"Light: OFF\"
 "
 
 [node name="SettingMenu" type="Control"]
