@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3 uid="uid://bxkeo3bbccqlo"]
+[gd_scene load_steps=9 format=3 uid="uid://bxkeo3bbccqlo"]
 
 [ext_resource type="Theme" uid="uid://f6n2yykmqd16" path="res://assets/style/theme.tres" id="1_cy78c"]
 
@@ -39,11 +39,10 @@ func initialize(program: HypertrophyProgramResource) -> void:
 	session_started.emit(sessionModel)
 	
 	## DEBUG: Pass session for Debug
-	var debug_panel = $VC/HC/LeftPanel/VC/Panel/DebugPanel # Prints live session model fields
-	debug_panel.initialize(sessionModel)
-	#var now := Time.get_unix_time_from_system()
-	#var sets_this_week := SessionManager.get_volume_summary( now - 604800, now)
-	#print(\"									SETS THIS WEEK: \",sets_this_week)
+	#var debug_panel = $VC/HC/LeftPanel/VC/Panel/DebugPanel # Prints live session model fields
+	#debug_panel.initialize(sessionModel)
+	
+	
 	
 	## CREATE EX_ROWS
 	
@@ -63,6 +62,8 @@ func initialize(program: HypertrophyProgramResource) -> void:
 		exercise_row.setOffsetToExercise.connect( offsetScrollToExercise )
 		# Add as a child
 		scroll_content.add_child(exercise_row)
+
+	
 		
 func _on_finish_pressed() -> void:
 	print(\"SessionView: finish pressed\")
@@ -282,6 +283,173 @@ func _update_debug_view():
 	debug_text.text = output
 "
 
+[sub_resource type="GDScript" id="GDScript_x71fo"]
+script/source = "extends Panel
+
+@onready var root = $\"../../../../../../..\"
+@onready var RestTimeLabel = $VC/TimeRestedLabel
+var session: SessionModel
+var last_set_res: ExerciseSetResource
+var last_exercise_idx: int = -1  # Track the exercise index
+var last_set_number: int = -1    # Track the set number
+var update_timer: Timer
+var elapsed_time: float = 0.0  # Track elapsed time since last set change
+
+func _ready():
+	root.session_started.connect(_on_session_started)
+	
+	# Create a timer to update the display every second
+	update_timer = Timer.new()
+	update_timer.wait_time = 1.0
+	update_timer.timeout.connect(_update_rest_time_display)
+	add_child(update_timer)
+
+func _on_session_started(session: SessionModel):
+	self.session = session
+	session.set_edited.connect(_update_latest_set)
+
+func _update_latest_set(exercise_idx: int, set_number: int, set_res: ExerciseSetResource):
+	# Check if this is a new set (by comparing exercise index OR set number)
+	if last_exercise_idx != exercise_idx or last_set_number != set_number:
+		last_set_res = set_res
+		last_exercise_idx = exercise_idx
+		last_set_number = set_number
+		
+		# Reset the elapsed time
+		elapsed_time = 0.0
+		
+		# Update display immediately
+		_update_rest_time_display()
+		
+		# Restart timer
+		if update_timer and not update_timer.is_stopped():
+			update_timer.stop()
+		update_timer.start()
+
+func _update_rest_time_display():
+	# Increment elapsed time (timer ticks every second)
+	elapsed_time += 1.0
+	
+	# Format as MM:SS
+	var minutes = floor(elapsed_time / 60)
+	var seconds = int(elapsed_time) % 60
+	
+	# Format with leading zeros
+	RestTimeLabel.text = \"%02d:%02d\" % [minutes, seconds]
+
+func _exit_tree():
+	if update_timer:
+		update_timer.queue_free()
+"
+
+[sub_resource type="GDScript" id="GDScript_1w4c1"]
+script/source = "extends VBoxContainer
+
+## TODO put it in scrollcontainer so that we can display full 4 month history, and make it scroll slowly
+#signal set_edited(exercise_idx: int, set_number: int, set_res: ExerciseSetResource) signal from session model
+@onready var root = $\"../../../../../../../../..\"
+@onready var CurrentExerciseLabel = $\"../CurrentExerciseLabel\"
+var session: SessionModel
+var last_set_res: ExerciseSetResource
+var last_exercise_res: ExerciseResource
+var current_exercise_id: String = \"\"  # Track current exercise to detect changes
+
+# Preload the helper scene
+const TopSetHistoryRowPanel = preload(\"res://scenes/SessionMenu/top_set_history_row_panel.tscn\")
+
+func _ready():
+	_clear_top_sets_display()
+	root.session_started.connect(_on_session_started)
+
+func _on_session_started(session: SessionModel):
+	self.session = session
+	session.set_edited.connect(_update_latest_set)
+
+func _update_latest_set(_exercise_idx: int, _set_number: int, set_res: ExerciseSetResource):
+	last_set_res = set_res
+	
+	# Check if exercise actually changed
+	if last_exercise_res != set_res.exercise:
+		last_exercise_res = set_res.exercise
+		_update_top_sets_display()
+		
+		#update label
+		CurrentExerciseLabel.text = last_exercise_res.name
+	
+	last_exercise_res = set_res.exercise
+
+func _update_top_sets_display():
+	# Clear previous top sets display
+	_clear_top_sets_display()
+	
+	if not last_exercise_res:
+		_add_no_sets_label()
+		return
+	
+	# Query for top sets in last 4 months (approximately 120 days)
+	var time_back = 120 * 24 * 60 * 60  # 4 months
+	var result = SessionManager.find_top_sets_for_exercise_in_time_range(last_exercise_res, time_back)
+	
+	# Check if we got valid results
+	if result.is_empty() or (result[\"weights\"].is_empty() and result[\"reps\"].is_empty()):
+		_add_no_sets_label()
+		return
+	
+	# Create entries list
+	var entries = []
+	for i in range(result[\"weights\"].size()):
+		entries.append({
+			\"weight\": result[\"weights\"][i],
+			\"reps\": result[\"reps\"][i],
+			\"timestamp\": result[\"timestamps\"][i]
+		})
+	
+	# Sort by weight (highest first)
+	entries.sort_custom(func(a, b): return a[\"weight\"] > b[\"weight\"])
+	
+	# Display top sets (limit to top 4 to avoid clutter)
+	var max_display = min(entries.size(), 4)
+	for i in range(max_display):
+		var entry = entries[i]
+		
+		# Create instance of the helper scene
+		var row_panel = TopSetHistoryRowPanel.instantiate()
+		
+		# Calculate days ago
+		var days_ago = _calculate_days_ago(entry[\"timestamp\"])
+		var days_text = \"\"
+		if days_ago == 0:
+			days_text = \"Today\"
+		elif days_ago == 1:
+			days_text = \"Yesterday\"
+		else:
+			days_text = str(days_ago) + \" days ago\"
+		
+		# Set the data on the panel
+		row_panel.set_data(days_text, entry[\"weight\"], entry[\"reps\"])
+		
+		add_child(row_panel)
+
+func _clear_top_sets_display():
+	# Remove all child nodes (including panels and labels)
+	for child in get_children():
+		child.queue_free()
+
+func _add_no_sets_label():
+	var no_sets_label = Label.new()
+	no_sets_label.text = \"No top\\nsets found\\nin the\\nlast 4\\nmonths\"
+	no_sets_label.add_theme_color_override(\"font_color\", Color(0.7, 0.7, 0.7))
+	no_sets_label.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
+	add_child(no_sets_label)
+
+func _calculate_days_ago(timestamp: int) -> int:
+	# Assuming timestamp is in Unix time (seconds since epoch)
+	var now = Time.get_unix_time_from_system()
+	var seconds_ago = now - timestamp
+	var days_ago = floor(seconds_ago / 86400)  # 86400 seconds in a day
+	return max(0, days_ago)
+"
+
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_2xaae"]
 content_margin_left = 10.0
 bg_color = Color(0.0784314, 0.0784314, 0.0784314, 1)
@@ -407,7 +575,7 @@ theme_override_constants/separation = 0
 [node name="LeftPanel" type="Panel" parent="VC/HC"]
 layout_mode = 2
 size_flags_horizontal = 3
-size_flags_stretch_ratio = 0.5
+size_flags_stretch_ratio = 0.25
 
 [node name="VC" type="VBoxContainer" parent="VC/HC/LeftPanel"]
 layout_mode = 1
@@ -423,6 +591,7 @@ layout_mode = 2
 size_flags_vertical = 3
 
 [node name="DebugPanel" type="Panel" parent="VC/HC/LeftPanel/VC/Panel"]
+visible = false
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -444,6 +613,78 @@ theme_override_font_sizes/italics_font_size = 22
 theme_override_font_sizes/bold_italics_font_size = 22
 theme_override_font_sizes/mono_font_size = 22
 
+[node name="VC" type="VBoxContainer" parent="VC/HC/LeftPanel/VC/Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 0
+
+[node name="RestTimePanel" type="Panel" parent="VC/HC/LeftPanel/VC/Panel/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_stretch_ratio = 0.25
+script = SubResource("GDScript_x71fo")
+
+[node name="VC" type="VBoxContainer" parent="VC/HC/LeftPanel/VC/Panel/VC/RestTimePanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 0
+alignment = 1
+
+[node name="Label" type="Label" parent="VC/HC/LeftPanel/VC/Panel/VC/RestTimePanel/VC"]
+layout_mode = 2
+text = "Rest time"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="TimeRestedLabel" type="Label" parent="VC/HC/LeftPanel/VC/Panel/VC/RestTimePanel/VC"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.490196, 0.490196, 0.490196, 1)
+text = "MM:SS"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ExerciseInfoPanel" type="Panel" parent="VC/HC/LeftPanel/VC/Panel/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="VC" type="VBoxContainer" parent="VC/HC/LeftPanel/VC/Panel/VC/ExerciseInfoPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 0
+
+[node name="CurrentExerciseLabel" type="Label" parent="VC/HC/LeftPanel/VC/Panel/VC/ExerciseInfoPanel/VC"]
+layout_mode = 2
+text = "-Exercise-"
+horizontal_alignment = 1
+vertical_alignment = 1
+clip_text = true
+text_overrun_behavior = 1
+
+[node name="Label" type="Label" parent="VC/HC/LeftPanel/VC/Panel/VC/ExerciseInfoPanel/VC"]
+layout_mode = 2
+text = "Top Sets"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="TopSetsHistoryContainer" type="VBoxContainer" parent="VC/HC/LeftPanel/VC/Panel/VC/ExerciseInfoPanel/VC"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 0
+alignment = 1
+script = SubResource("GDScript_1w4c1")
+
 [node name="SessionButtonsPanel" type="Panel" parent="VC/HC/LeftPanel/VC"]
 layout_mode = 2
 size_flags_vertical = 3
@@ -456,6 +697,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme_override_constants/separation = 0
 
 [node name="FinishSessionButton" type="Button" parent="VC/HC/LeftPanel/VC/SessionButtonsPanel/HC"]
 layout_mode = 2
@@ -471,7 +713,7 @@ text = "Abort"
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-theme_override_constants/margin_left = 10
+theme_override_constants/margin_left = 0
 theme_override_constants/margin_top = 10
 theme_override_constants/margin_right = 10
 theme_override_constants/margin_bottom = 10
@@ -485,6 +727,8 @@ layout_mode = 2
 size_flags_vertical = 3
 theme_override_styles/panel = SubResource("StyleBoxFlat_2xaae")
 follow_focus = true
+horizontal_scroll_mode = 3
+vertical_scroll_mode = 3
 
 [node name="ScrollContnent" type="VBoxContainer" parent="VC/HC/MC/VC/ScrollContainer"]
 layout_direction = 2

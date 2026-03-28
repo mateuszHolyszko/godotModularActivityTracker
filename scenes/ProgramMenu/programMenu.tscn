@@ -464,6 +464,8 @@ grow_vertical = 2
 [node name="ScrollContainer" type="ScrollContainer" parent="CurrentSceneContent/MC/HC/RightPanel/MC"]
 layout_mode = 2
 follow_focus = true
+horizontal_scroll_mode = 3
+vertical_scroll_mode = 3
 
 [node name="ScrollContent" type="VBoxContainer" parent="CurrentSceneContent/MC/HC/RightPanel/MC/ScrollContainer"]
 layout_mode = 2

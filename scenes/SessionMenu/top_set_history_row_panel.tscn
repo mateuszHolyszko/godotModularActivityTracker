@@ -1,0 +1,91 @@
+[gd_scene load_steps=3 format=3 uid="uid://bn265wktkcwq3"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ts0bq"]
+bg_color = Color(0.0980392, 0.0980392, 0.0980392, 1)
+border_width_left = 2
+border_width_top = 1
+border_width_right = 2
+border_width_bottom = 1
+
+[sub_resource type="GDScript" id="GDScript_j21xg"]
+script/source = "extends Panel
+
+@onready var DaysAgoLabel = $VC/DaysAgoLabel
+@onready var WeightLabel = $VC/HC/WeightLabel
+@onready var RepsLabel = $VC/HC/RepsLabel
+
+func set_data(days_text: String, weight: float, reps: int):
+	\"\"\"Set the data for this row panel\"\"\"
+	# Defer the call to ensure the node is ready
+	call_deferred(\"_set_data_deferred\", days_text, weight, reps)
+
+func _set_data_deferred(days_text: String, weight: float, reps: int):
+	\"\"\"Called after node is ready\"\"\"
+	if not is_inside_tree():
+		await ready  # Wait for ready if not in tree
+	
+	DaysAgoLabel.text = days_text
+	WeightLabel.text = \"W:\"+str(weight)
+	RepsLabel.text = \"R:\"+str(reps)
+"
+
+[node name="TopSetHistoryRowPanel" type="Panel"]
+custom_minimum_size = Vector2(0, 45)
+anchors_preset = 14
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_ts0bq")
+script = SubResource("GDScript_j21xg")
+
+[node name="VC" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 0
+
+[node name="DaysAgoLabel" type="Label" parent="VC"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.643137, 0.643137, 0.643137, 1)
+theme_override_font_sizes/font_size = 16
+text = "Days Ago"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HC" type="HBoxContainer" parent="VC"]
+layout_mode = 2
+size_flags_vertical = 3
+alignment = 1
+
+[node name="HS" type="HSplitContainer" parent="VC/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="WeightLabel" type="Label" parent="VC/HC"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.643137, 0.643137, 0.643137, 1)
+theme_override_font_sizes/font_size = 16
+text = "W kg"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HS2" type="HSplitContainer" parent="VC/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="RepsLabel" type="Label" parent="VC/HC"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.643137, 0.643137, 0.643137, 1)
+theme_override_font_sizes/font_size = 16
+text = "R kg"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HS3" type="HSplitContainer" parent="VC/HC"]
+layout_mode = 2
+size_flags_horizontal = 3
